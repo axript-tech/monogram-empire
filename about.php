@@ -14,7 +14,11 @@
     <div class="container mx-auto px-6">
         <div class="grid md:grid-cols-2 gap-12 items-center">
             <div>
-                <img src="https://placehold.co/600x700/e0e0e0/1a1a1a?text=Our+Workspace" alt="A stylish tailor's workspace" class="rounded-lg shadow-2xl w-full">
+                <video class="w-full h-full object-cover rounded-lg shadow-2xl" autoplay loop muted playsinline>
+                    <source src="assets/images/cossly2" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                <!-- <img src="https://placehold.co/600x700/e0e0e0/1a1a1a?text=Our+Workspace" alt="A stylish tailor's workspace" class="rounded-lg shadow-2xl w-full"> -->
             </div>
             <div>
                 <h2 class="text-3xl font-bold text-brand-dark mb-4">Stitching a Legacy</h2>

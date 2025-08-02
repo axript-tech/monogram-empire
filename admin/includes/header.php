@@ -26,8 +26,51 @@ require_once 'auth_check.php';
             }
         }
     </script>
+    <style>
+        /* Custom Scrollbar Styling for Webkit Browsers (Chrome, Safari) */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1a1a1a; /* bg-brand-dark */
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #333333; /* bg-brand-gray */
+            border-radius: 10px;
+            border: 2px solid #1a1a1a; /* bg-brand-dark */
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: #FFD700; /* bg-brand-gold */
+        }
+        /* Toast Notification Animation */
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        .toast-in { animation: slideInRight 0.5s forwards; }
+        .toast-out { animation: slideOutRight 0.5s forwards; }
+    </style>
 </head>
 <body class="bg-brand-light-gray">
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[100]"></div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-[99] flex justify-center items-center">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm text-center">
+            <h3 id="confirmation-title" class="text-lg font-bold text-brand-dark mb-4">Are you sure?</h3>
+            <p id="confirmation-message" class="text-gray-600 mb-6">This action cannot be undone.</p>
+            <div class="flex justify-center space-x-4">
+                <button id="confirm-cancel-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-full hover:bg-gray-400 transition-colors">Cancel</button>
+                <button id="confirm-action-btn" class="bg-red-500 text-white font-bold py-2 px-6 rounded-full hover:bg-red-600 transition-colors">Delete</button>
+            </div>
+        </div>
+    </div>
+
     <div class="flex h-screen bg-gray-200">
         <!-- Sidebar -->
         <?php include 'sidebar.php'; ?>

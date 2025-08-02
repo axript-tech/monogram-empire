@@ -1,4 +1,21 @@
-<?php include 'includes/header.php'; ?>
+<?php 
+include 'includes/functions.php';
+include 'includes/header.php'; 
+include 'includes/db_connect.php';
+
+$user_info = null;
+if (is_logged_in()) {
+    $user_id = $_SESSION['user_id'];
+    // Get user info to pre-fill the form
+    $stmt = $conn->prepare("SELECT first_name, last_name, email FROM users WHERE id = ?");
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $user_result = $stmt->get_result();
+    $user_info = $user_result->fetch_assoc();
+    $stmt->close();
+}
+$conn->close();
+?>
 
 <!-- Page Header -->
 <div class="relative bg-brand-dark text-white py-20">
@@ -16,14 +33,18 @@
             <!-- Form -->
             <div class="bg-brand-light-gray p-8 rounded-lg shadow-lg">
                 <h2 class="text-3xl font-bold text-brand-dark mb-6">Submit Your Request</h2>
-                <form id="service-request-form" action="api/preorder/submit.php" method="POST" enctype="multipart/form-data">
+                
+                <!-- Container for AJAX messages -->
+                <div id="preorder-message-container" class="mb-4" style="display: none;"></div>
+
+                <form id="service-request-form" enctype="multipart/form-data">
                     <div class="mb-4">
                         <label for="name" class="block text-gray-700 font-bold mb-2">Full Name</label>
-                        <input type="text" id="name" name="name" placeholder="John Doe" required class="w-full px-4 py-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-gold">
+                        <input type="text" id="name" name="name" value="<?php echo htmlspecialchars(($user_info['first_name'] ?? '') . ' ' . ($user_info['last_name'] ?? '')); ?>" placeholder="John Doe" required class="w-full px-4 py-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-gold">
                     </div>
                     <div class="mb-4">
                         <label for="email" class="block text-gray-700 font-bold mb-2">Email Address</label>
-                        <input type="email" id="email" name="email" placeholder="you@example.com" required class="w-full px-4 py-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-gold">
+                        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($user_info['email'] ?? ''); ?>" placeholder="you@example.com" required class="w-full px-4 py-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-gold">
                     </div>
                     <div class="mb-4">
                         <label for="initials" class="block text-gray-700 font-bold mb-2">Initials to Include</label>
@@ -44,9 +65,9 @@
                         <textarea id="details" name="details" rows="5" placeholder="Describe your vision. Mention any specific elements, themes, or feelings you want the design to evoke." required class="w-full px-4 py-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-gold"></textarea>
                     </div>
                     <div class="mb-6">
-                        <label for="inspiration_files" class="block text-gray-700 font-bold mb-2">Inspiration Files (Optional)</label>
-                        <input type="file" id="inspiration_files" name="inspiration_files[]" multiple class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-gold file:text-brand-dark hover:file:bg-yellow-300">
-                        <p class="text-xs text-gray-500 mt-1">Upload images, sketches, or documents (.jpg, .png, .pdf).</p>
+                        <label for="inspiration_file" class="block text-gray-700 font-bold mb-2">Inspiration File (Optional)</label>
+                        <input type="file" id="inspiration_file" name="inspiration_file" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-gold file:text-brand-dark hover:file:bg-yellow-300">
+                        <p class="text-xs text-gray-500 mt-1">Upload one image, sketch, or document (.jpg, .png, .pdf).</p>
                     </div>
                     <div>
                         <button type="submit" class="w-full bg-brand-gold text-brand-dark font-bold py-3 px-8 rounded-full text-lg hover:bg-yellow-300 transition-transform transform hover:scale-105">
@@ -85,6 +106,9 @@
 </section>
 
 <?php include 'includes/footer.php'; ?>
+
+<!-- IMPORTANT: Include the page-specific JavaScript file AFTER the footer -->
+<script src="assets/js/preorder.js"></script>
 
 <style>
 .prose ol { list-style-type: decimal; padding-left: 1.5rem; }

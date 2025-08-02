@@ -39,7 +39,7 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 }
 
 // --- Send Stylish HTML Email ---
-$admin_email = "admin@monogramempire.com";
+$admin_email = "admin@monogramempire.com"; // The email address that receives the contact form submissions
 $email_subject = "New Contact Form Submission: " . $subject;
 
 // Set headers for HTML email
@@ -92,15 +92,12 @@ $email_body = '
 </html>
 ';
 
-// The mail() function is often disabled on shared hosting.
-// In a real application, you would uncomment this and use a library like PHPMailer for reliability.
-// if (mail($admin_email, $email_subject, $email_body, $headers)) {
-//     send_json_response(['success' => true, 'message' => 'Thank you for your message! We will get back to you shortly.'], 200);
-// } else {
-//     send_json_response(['success' => false, 'message' => 'Sorry, there was an error sending your message. Please try again later.'], 500);
-// }
-
-// For this example, we will always return a success response to demonstrate the frontend functionality.
-send_json_response(['success' => true, 'message' => 'Thank you for your message! We will get back to you shortly.'], 200);
+// Use the mail() function to send the email.
+// Note: This requires the server to be configured to send mail (e.g., via php.ini).
+if (mail($admin_email, $email_subject, $email_body, $headers)) {
+    send_json_response(['success' => true, 'message' => 'Thank you for your message! We will get back to you shortly.'], 200);
+} else {
+    send_json_response(['success' => false, 'message' => 'Sorry, there was an error sending your message. Please try again later.'], 500);
+}
 
 ?>

@@ -45,11 +45,13 @@ while ($row = $result->fetch_assoc()) {
 $stmt->close();
 $conn->close();
 
+// FIX: Send the subtotal as a raw number for accurate frontend calculations.
+// The frontend will handle the display formatting.
 send_json_response([
     'success' => true,
     'cart_items' => $cart_items,
     'item_count' => count($cart_items),
-    'subtotal' => number_format($subtotal, 2)
+    'subtotal' => $subtotal 
 ], 200);
 
 ?>

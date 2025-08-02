@@ -10,7 +10,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     send_json_response(['error' => 'Invalid request method.'], 405);
 }
 
-// --- User Authentication Check ---
 // A user must be logged in to request a service.
 if (!is_logged_in()) {
     send_json_response(['success' => false, 'message' => 'You must be logged in to request a custom design.'], 401);
@@ -19,18 +18,11 @@ if (!is_logged_in()) {
 $user_id = $_SESSION['user_id'];
 
 // --- Validation ---
-// We are dealing with form data (multipart/form-data) here, so we use $_POST.
-$errors = [];
 $required_fields = ['name', 'email', 'initials', 'style_preference', 'details'];
-
 foreach ($required_fields as $field) {
     if (empty($_POST[$field])) {
-        $errors[] = ucfirst(str_replace('_', ' ', $field)) . ' is required.';
+        send_json_response(['success' => false, 'message' => 'Please fill out all required fields.'], 400);
     }
-}
-
-if (!empty($errors)) {
-    send_json_response(['success' => false, 'message' => 'Missing required fields.', 'errors' => $errors], 400);
 }
 
 // Sanitize inputs
@@ -40,38 +32,50 @@ $initials = sanitize_input($_POST['initials']);
 $style_preference = sanitize_input($_POST['style_preference']);
 $details = sanitize_input($_POST['details']);
 
-// Combine all details into a single text block for the database
-$full_details = "Initials: " . $initials . "\n";
+$full_details = "Customer Name: " . $name . "\n";
+$full_details .= "Customer Email: " . $email . "\n";
+$full_details .= "Initials: " . $initials . "\n";
 $full_details .= "Style Preference: " . $style_preference . "\n\n";
 $full_details .= "--- Design Details ---\n" . $details;
 
-// --- File Upload Simulation ---
-// In a real application, you would handle file uploads securely:
-// 1. Check file types and sizes.
-// 2. Generate unique filenames.
-// 3. Move uploaded files to a secure, non-public directory.
-// 4. Store the file paths in the database.
-// For now, we will just acknowledge if files were sent.
-if (!empty($_FILES['inspiration_files'])) {
-    $file_count = count($_FILES['inspiration_files']['name']);
-    $full_details .= "\n\n--- User uploaded " . $file_count . " inspiration file(s). ---";
+// --- File Upload Handling ---
+$upload_path = null;
+if (isset($_FILES['inspiration_file']) && $_FILES['inspiration_file']['error'] == 0) {
+    $allowed_types = ['image/jpeg', 'image/png', 'application/pdf'];
+    $max_size = 5 * 1024 * 1024; // 5 MB
+
+    if (!in_array($_FILES['inspiration_file']['type'], $allowed_types)) {
+        send_json_response(['success' => false, 'message' => 'Invalid file type. Please upload a JPG, PNG, or PDF.'], 400);
+    }
+    if ($_FILES['inspiration_file']['size'] > $max_size) {
+        send_json_response(['success' => false, 'message' => 'File is too large. Maximum size is 5 MB.'], 400);
+    }
+
+    $upload_dir = '../../uploads/inspirations/';
+    if (!is_dir($upload_dir)) {
+        mkdir($upload_dir, 0755, true);
+    }
+
+    $file_extension = pathinfo($_FILES['inspiration_file']['name'], PATHINFO_EXTENSION);
+    $unique_filename = uniqid('inspiration_', true) . '.' . $file_extension;
+    $upload_path = $upload_dir . $unique_filename;
+
+    if (move_uploaded_file($_FILES['inspiration_file']['tmp_name'], $upload_path)) {
+        // Append file path to details
+        $full_details .= "\n\n--- Inspiration File ---\n" . $unique_filename;
+    } else {
+        send_json_response(['success' => false, 'message' => 'There was an error uploading your file.'], 500);
+    }
 }
 
 // --- Create Service Request ---
-// Generate a unique tracking ID
 $tracking_id = "ME-CUSTOM-" . strtoupper(substr(md5(uniqid()), 0, 8));
-
-// For now, we'll assume a default service_id (e.g., 1 for 'Custom Monogram Design')
-// In a more complex app, the user might select this from a list.
-$service_id = 1; 
+$service_id = 1; // Default service ID
 
 $stmt = $conn->prepare("INSERT INTO service_requests (user_id, service_id, details, tracking_id, status) VALUES (?, ?, ?, ?, 'pending')");
 $stmt->bind_param("iiss", $user_id, $service_id, $full_details, $tracking_id);
 
 if ($stmt->execute()) {
-    // --- Simulate Email Notification to Admin ---
-    // You would send an email to the admin here to notify them of the new request.
-    
     send_json_response([
         'success' => true, 
         'message' => 'Your custom design request has been submitted successfully! You will receive a quote within 2-3 business days.',

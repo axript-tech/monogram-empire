@@ -22,11 +22,10 @@ $json_data = file_get_contents('php://input');
 $data = json_decode($json_data, true);
 
 // --- Validation ---
-// Basic validation for billing info
-$required_fields = ['first_name', 'last_name', 'email', 'phone'];
+$required_fields = ['first_name', 'last_name', 'email'];
 foreach ($required_fields as $field) {
     if (empty($data[$field])) {
-        send_json_response(['success' => false, 'message' => 'Billing information is incomplete.'], 400);
+        send_json_response(['success' => false, 'message' => 'Contact information is incomplete.'], 400);
     }
 }
 
@@ -55,13 +54,15 @@ while ($row = $result->fetch_assoc()) {
 $stmt->close();
 
 // --- Create Order in Database ---
-// We use a transaction to ensure all database operations succeed or fail together.
 $conn->begin_transaction();
 
 try {
-    // 1. Insert into the `orders` table
-    $stmt = $conn->prepare("INSERT INTO orders (user_id, order_total, status) VALUES (?, ?, 'pending')");
-    $stmt->bind_param("id", $user_id, $order_total);
+    // Generate a unique payment reference
+    $payment_reference = 'ME-' . uniqid();
+
+    // 1. Insert into the `orders` table with the reference
+    $stmt = $conn->prepare("INSERT INTO orders (user_id, order_total, status, payment_reference) VALUES (?, ?, 'pending', ?)");
+    $stmt->bind_param("ids", $user_id, $order_total, $payment_reference);
     $stmt->execute();
     $order_id = $stmt->insert_id;
     $stmt->close();
@@ -83,24 +84,22 @@ try {
     // If all queries were successful, commit the transaction
     $conn->commit();
 
-    // --- Prepare for Payment Gateway ---
-    // In a real application, you would now make an API call to Paystack (or another provider)
-    // with the order_id, order_total, and user's email to get a payment URL.
-    
-    // For this simulation, we'll just return a success message with the order ID.
+    // --- Prepare Data for Paystack ---
+    // IMPORTANT: In a real app, get your key from a secure config file.
+    $paystack_public_key = 'pk_test_00b7531c09eed64cf7af3e4cc42efc753f45dd6d'; // Replace with your actual Paystack Public Key
+
     send_json_response([
         'success' => true,
-        'message' => 'Order created successfully. Redirecting to payment...',
+        'message' => 'Order created successfully. Initializing payment...',
         'order_id' => $order_id,
-        // 'payment_url' => 'https://paystack.com/pay/...' // This would be the real URL
+        'paystack_public_key' => $paystack_public_key,
+        'email' => $email,
+        'total' => $order_total * 100, // Paystack expects amount in kobo
+        'reference' => $payment_reference
     ], 201);
 
 } catch (mysqli_sql_exception $exception) {
-    // An error occurred, roll back the transaction
     $conn->rollback();
-    
-    // Log the error and send a generic failure response
-    // error_log("Checkout transaction failed: " . $exception->getMessage());
     send_json_response(['success' => false, 'message' => 'Failed to create order. Please try again.'], 500);
 }
 

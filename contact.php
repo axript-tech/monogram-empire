@@ -1,4 +1,7 @@
-<?php include 'includes/header.php'; ?>
+<?php 
+include 'includes/functions.php';
+include 'includes/header.php'; 
+?>
 
 <!-- Page Header -->
 <div class="relative bg-brand-dark text-white py-20">
@@ -51,20 +54,32 @@
                     <h3 class="text-2xl font-bold text-brand-dark mb-4">Contact Information</h3>
                     <div class="space-y-4 text-gray-600">
                         <div class="flex items-start">
+                            <i class="fas fa-phone-alt text-brand-gold text-xl mt-1 mr-4"></i>
+                            <div>
+                                <p class="font-bold">Call/Whatsapp</p>
+                                <p>08101583986</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
                             <i class="fas fa-map-marker-alt text-brand-gold text-xl mt-1 mr-4"></i>
-                            <span>123 Fashion Avenue, Victoria Island, Lagos, Nigeria</span>
+                            <div>
+                                <p class="font-bold">Oshodi Office</p>
+                                <p>79 Oshodi Road, Oshodi, Lagos</p>
+                            </div>
                         </div>
                         <div class="flex items-start">
-                            <i class="fas fa-phone text-brand-gold text-xl mt-1 mr-4"></i>
-                            <span>+234 801 234 5678</span>
-                        </div>
-                        <div class="flex items-start">
-                            <i class="fas fa-envelope text-brand-gold text-xl mt-1 mr-4"></i>
-                            <span>contact@monogramempire.com</span>
+                            <i class="fas fa-map-marker-alt text-brand-gold text-xl mt-1 mr-4"></i>
+                             <div>
+                                <p class="font-bold">Agege Office</p>
+                                <p>95, Old Abeokuta Road, Misamsco Plaza opposite post office, Agege, Lagos</p>
+                            </div>
                         </div>
                          <div class="flex items-start">
-                            <i class="fas fa-clock text-brand-gold text-xl mt-1 mr-4"></i>
-                            <span>Mon - Fri: 9:00 AM - 6:00 PM</span>
+                            <i class="fas fa-map-marker-alt text-brand-gold text-xl mt-1 mr-4"></i>
+                             <div>
+                                <p class="font-bold">Ogba Office</p>
+                                <p>1 Ogunsola Street, Aguda, Ogba, Lagos</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -72,8 +87,15 @@
                 <div>
                      <h3 class="text-2xl font-bold text-brand-dark mb-4">Find Us Here</h3>
                      <div class="w-full h-80 rounded-lg overflow-hidden shadow-2xl">
-                        <!-- Placeholder for an interactive map -->
-                        <img src="https://placehold.co/800x600/333333/FFD700?text=Map+of+Lagos" alt="Map showing our location in Lagos" class="w-full h-full object-cover">
+                        <iframe 
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3963.591399898037!2d3.334016915305981!3d6.572793824424078!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x103b8e7b1f5b2e4d%3A0x8c7729b27a3a992d!2s79%20Oshodi%20Rd%2C%20Oshodi-Isolo%2C%20Lagos!5e0!3m2!1sen!2sng!4v1662552829363!5m2!1sen!2sng" 
+                            width="100%" 
+                            height="100%" 
+                            style="border:0;" 
+                            allowfullscreen="" 
+                            loading="lazy" 
+                            referrerpolicy="no-referrer-when-downgrade">
+                        </iframe>
                      </div>
                 </div>
             </div>

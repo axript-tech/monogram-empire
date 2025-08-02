@@ -1,3 +1,4 @@
+<?php include 'includes/functions.php'; ?>
 <?php include 'includes/header.php'; ?>
 
 <!-- Page Header -->
