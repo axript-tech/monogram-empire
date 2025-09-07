@@ -25,7 +25,7 @@ $(document).ready(function() {
             const productCard = `
                 <div class="bg-white rounded-lg shadow-md overflow-hidden group">
                     <div class="relative">
-                        <img src=".${product.image_url}" alt="${product.name}" class="w-full h-64 object-cover">
+                        <img src="${product.image_url}" alt="${product.name}" class="w-full h-64 object-cover">
                         <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <a href="product-details.php?id=${product.id}" class="text-white border-2 border-brand-gold bg-brand-gold bg-opacity-50 py-2 px-6 rounded-full hover:bg-opacity-100 transition-all">View Details</a>
                         </div>

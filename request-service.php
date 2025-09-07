@@ -1,117 +1,126 @@
-<?php 
-include 'includes/functions.php';
-include 'includes/header.php'; 
-include 'includes/db_connect.php';
+<?php
+// This MUST be the very first line of the file to avoid "headers already sent" errors.
+include_once 'includes/functions.php';
+include_once 'includes/db_connect.php';
 
-$user_info = null;
-if (is_logged_in()) {
-    $user_id = $_SESSION['user_id'];
-    // Get user info to pre-fill the form
-    $stmt = $conn->prepare("SELECT first_name, last_name, email FROM users WHERE id = ?");
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-    $user_result = $stmt->get_result();
-    $user_info = $user_result->fetch_assoc();
-    $stmt->close();
-}
-$conn->close();
+// Pre-fill user data if they are logged in.
+$user_first_name = is_logged_in() && isset($_SESSION['user_first_name']) ? htmlspecialchars($_SESSION['user_first_name']) : '';
+$user_last_name = is_logged_in() && isset($_SESSION['user_last_name']) ? htmlspecialchars($_SESSION['user_last_name']) : '';
+$user_email = is_logged_in() && isset($_SESSION['user_email']) ? htmlspecialchars($_SESSION['user_email']) : '';
+
+include 'includes/header.php';
 ?>
 
-<!-- Page Header -->
-<div class="relative bg-brand-dark text-white py-20">
-    <div class="absolute inset-0 bg-cover bg-center opacity-30" style="background-image: url('assets/images/hero-bg.jpg');"></div>
-    <div class="relative container mx-auto px-6 text-center">
-        <h1 class="text-4xl md:text-5xl font-bold" style="font-family: 'Playfair Display', serif;">Bespoke Monogram Service</h1>
-        <p class="text-lg text-gray-300 mt-2">Let us craft a unique design that tells your story.</p>
+<div class="bg-gray-50">
+    <!-- Page Header -->
+    <div class="bg-cover bg-brand-dark text-white py-20 bg-center py-24" style="background-image: url('https://images.unsplash.com/photo-1549060279-7f1699b5918e?q=80&w=2070&auto=format&fit=crop');">
+        <div class="container mx-auto text-center">
+            <h1 class="text-4xl lg:text-5xl font-bold text-white tracking-tight">Bespoke Monogram Service</h1>
+            <p class="mt-4 text-lg text-gray-200">Let us craft a unique design, just for you.</p>
+        </div>
     </div>
-</div>
 
-<!-- Custom Service Request Section -->
-<section class="py-16 bg-white">
-    <div class="container mx-auto px-6">
-        <div class="grid lg:grid-cols-2 gap-12">
-            <!-- Form -->
-            <div class="bg-brand-light-gray p-8 rounded-lg shadow-lg">
-                <h2 class="text-3xl font-bold text-brand-dark mb-6">Submit Your Request</h2>
-                
-                <!-- Container for AJAX messages -->
-                <div id="preorder-message-container" class="mb-4" style="display: none;"></div>
+    <!-- Main Content Area -->
+    <div class="container mx-auto px-6 py-16">
+        <!-- Main Form Container (Visible by default) -->
+        <div id="request-form-container">
+            <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+                <!-- How It Works Section -->
+                <div class="space-y-6">
+                    <h2 class="text-3xl font-bold text-brand-dark mb-4">How It Works</h2>
+                    <div class="flex items-start space-x-4">
+                        <div class="flex-shrink-0 h-12 w-12 rounded-full bg-brand-gold text-brand-dark flex items-center justify-center font-bold text-xl">1</div>
+                        <div>
+                            <h3 class="font-bold text-lg">Submit Your Vision</h3>
+                            <p class="text-gray-600">Fill out the form with your ideas, text, and style preferences. The more detail, the better!</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-4">
+                        <div class="flex-shrink-0 h-12 w-12 rounded-full bg-brand-gold text-brand-dark flex items-center justify-center font-bold text-xl">2</div>
+                        <div>
+                            <h3 class="font-bold text-lg">Receive a Quote</h3>
+                            <p class="text-gray-600">Our designers will review your request and provide a no-obligation quote within 24-48 hours.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-4">
+                        <div class="flex-shrink-0 h-12 w-12 rounded-full bg-brand-gold text-brand-dark flex items-center justify-center font-bold text-xl">3</div>
+                        <div>
+                            <h3 class="font-bold text-lg">Creation & Delivery</h3>
+                            <p class="text-gray-600">Once approved, we'll create your bespoke monogram and deliver the digital files upon completion.</p>
+                        </div>
+                    </div>
+                </div>
 
-                <form id="service-request-form" enctype="multipart/form-data">
-                    <div class="mb-4">
-                        <label for="name" class="block text-gray-700 font-bold mb-2">Full Name</label>
-                        <input type="text" id="name" name="name" value="<?php echo htmlspecialchars(($user_info['first_name'] ?? '') . ' ' . ($user_info['last_name'] ?? '')); ?>" placeholder="John Doe" required class="w-full px-4 py-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-gold">
-                    </div>
-                    <div class="mb-4">
-                        <label for="email" class="block text-gray-700 font-bold mb-2">Email Address</label>
-                        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($user_info['email'] ?? ''); ?>" placeholder="you@example.com" required class="w-full px-4 py-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-gold">
-                    </div>
-                    <div class="mb-4">
-                        <label for="initials" class="block text-gray-700 font-bold mb-2">Initials to Include</label>
-                        <input type="text" id="initials" name="initials" placeholder="e.g., J.D. or JD" required class="w-full px-4 py-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-gold">
-                    </div>
-                    <div class="mb-4">
-                        <label for="style_preference" class="block text-gray-700 font-bold mb-2">Style Preference</label>
-                        <select id="style_preference" name="style_preference" class="w-full px-4 py-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-gold">
-                            <option>Classic & Traditional</option>
-                            <option>Modern & Minimalist</option>
-                            <option>Floral & Botanical</option>
-                            <option>Geometric</option>
-                            <option>Other (describe below)</option>
-                        </select>
-                    </div>
-                    <div class="mb-6">
-                        <label for="details" class="block text-gray-700 font-bold mb-2">Design Details & Inspiration</label>
-                        <textarea id="details" name="details" rows="5" placeholder="Describe your vision. Mention any specific elements, themes, or feelings you want the design to evoke." required class="w-full px-4 py-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-gold"></textarea>
-                    </div>
-                    <div class="mb-6">
-                        <label for="inspiration_file" class="block text-gray-700 font-bold mb-2">Inspiration File (Optional)</label>
-                        <input type="file" id="inspiration_file" name="inspiration_file" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-gold file:text-brand-dark hover:file:bg-yellow-300">
-                        <p class="text-xs text-gray-500 mt-1">Upload one image, sketch, or document (.jpg, .png, .pdf).</p>
-                    </div>
-                    <div>
-                        <button type="submit" class="w-full bg-brand-gold text-brand-dark font-bold py-3 px-8 rounded-full text-lg hover:bg-yellow-300 transition-transform transform hover:scale-105">
-                            Request a Quote
-                        </button>
-                    </div>
-                </form>
-            </div>
-            <!-- How It Works -->
-            <div class="prose lg:prose-lg">
-                <h2 class="text-3xl font-bold text-brand-dark" style="font-family: 'Playfair Display', serif;">How It Works</h2>
-                <ol>
-                    <li>
-                        <strong>Submit Your Vision</strong><br>
-                        Fill out the form with your ideas, initials, and any inspirational images. The more detail, the better!
-                    </li>
-                    <li>
-                        <strong>Receive a Quote</strong><br>
-                        Our design team will review your request and send you a detailed quote and project timeline within 2-3 business days.
-                    </li>
-                    <li>
-                        <strong>Collaborate & Refine</strong><br>
-                        Once you approve the quote, we'll begin the design process. You'll receive initial concepts and have the opportunity to provide feedback and request revisions.
-                    </li>
-                    <li>
-                        <strong>Final Delivery</strong><br>
-                        After your final approval, we will deliver your unique, high-resolution monogram files in all standard formats, ready for you to use.
-                    </li>
-                </ol>
-                <div class="mt-8">
-                    <p>Already have a request? <a href="track-preorder.php" class="text-brand-gold font-bold hover:underline">Track it here.</a></p>
+                <!-- Form Section -->
+                <div class="bg-white p-8 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold text-brand-dark mb-6">Request a Quote</h2>
+                    <div id="preorder-message-container" class="mb-4" style="display: none;"></div>
+                    <form id="preorder-form" enctype="multipart/form-data">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="first_name" class="block text-sm font-medium text-gray-700">First Name</label>
+                                <input type="text" id="first_name" name="first_name" value="<?= $user_first_name ?>" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold">
+                            </div>
+                            <div>
+                                <label for="last_name" class="block text-sm font-medium text-gray-700">Last Name</label>
+                                <input type="text" id="last_name" name="last_name" value="<?= $user_last_name ?>" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold">
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                            <input type="email" id="email" name="email" value="<?= $user_email ?>" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold">
+                        </div>
+                        <div class="mt-4">
+                            <label for="monogram_text" class="block text-sm font-medium text-gray-700">Text for Monogram (e.g., "J.D.", "The Smiths")</label>
+                            <input type="text" id="monogram_text" name="monogram_text" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold">
+                        </div>
+                        <div class="mt-4">
+                            <label for="style_preference" class="block text-sm font-medium text-gray-700">Style Preference</label>
+                            <select id="style_preference" name="style_preference" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold">
+                                <option>Classic & Elegant</option>
+                                <option>Modern & Minimalist</option>
+                                <option>Vintage & Ornate</option>
+                                <option>Bold & Graphic</option>
+                                <option>Designer's Choice</option>
+                            </select>
+                        </div>
+                        <div class="mt-4">
+                            <label for="additional_details" class="block text-sm font-medium text-gray-700">Additional Details (Colors, symbols, etc.)</label>
+                            <textarea id="additional_details" name="additional_details" rows="4" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold"></textarea>
+                        </div>
+                        <div class="mt-4">
+                            <label for="inspiration_file" class="block text-sm font-medium text-gray-700">Inspiration File (Optional, 2MB Max)</label>
+                            <input type="file" id="inspiration_file" name="inspiration_file" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-gold file:text-brand-dark hover:file:bg-yellow-300">
+                        </div>
+                        <div class="mt-6">
+                            <button type="submit" class="w-full bg-brand-dark text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center">
+                                <span class="button-text">Request a Quote</span>
+                                <i class="fas fa-spinner fa-spin ml-2 button-spinner" style="display: none;"></i>
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
+
+        <!-- Success Message Container (Hidden by default) -->
+        <div id="success-container" style="display: none;" class="text-center max-w-2xl mx-auto bg-white p-12 rounded-lg shadow-xl">
+            <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-green-100 mb-6">
+                <i class="fas fa-check-circle text-5xl text-green-500"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-brand-dark mb-4">Request Submitted!</h2>
+            <p class="text-gray-600 mb-6">Thank you for your interest. Our design team will review your request and get back to you with a quote shortly. Your unique tracking ID is:</p>
+            <div class="bg-gray-100 text-brand-dark font-mono text-2xl font-bold py-3 px-6 rounded-lg inline-block mb-8" id="success-tracking-id"></div>
+            <div class="flex justify-center space-x-4">
+                <a href="#" id="success-track-link" class="bg-brand-dark text-white font-bold py-3 px-8 rounded-lg hover:bg-gray-700 transition-colors">Track My Request</a>
+                <button id="make-another-request-btn" class="bg-gray-200 text-brand-dark font-bold py-3 px-8 rounded-lg hover:bg-gray-300 transition-colors">Make Another Request</button>
+            </div>
+        </div>
     </div>
-</section>
+</div>
+
 
 <?php include 'includes/footer.php'; ?>
 
-<!-- IMPORTANT: Include the page-specific JavaScript file AFTER the footer -->
-<script src="assets/js/preorder.js"></script>
 
-<style>
-.prose ol { list-style-type: decimal; padding-left: 1.5rem; }
-.prose li { margin-bottom: 1.5rem; padding-left: 0.5rem; }
-.prose li strong { color: #1a1a1a; }
-</style>
+<script src="assets/js/preorder.js"></script>

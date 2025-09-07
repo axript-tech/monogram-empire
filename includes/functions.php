@@ -1,70 +1,75 @@
 <?php
-// Monogram Empire - Core Functions
-// This file contains helper functions used across the application.
-
-// Start the session. This is needed for user authentication, cart, etc.
-// It's placed here so that any file including this will have session capabilities.
+// This must be at the very top of the file before any output.
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
 /**
- * Sends a standardized JSON response back to the client.
- * Sets the appropriate content type header and terminates the script.
- *
- * @param array $data The data to be encoded into JSON.
- * @param int $statusCode The HTTP status code to send (e.g., 200 for OK, 400 for Bad Request).
- */
-function send_json_response($data, $statusCode = 200) {
-    // Set the HTTP response code.
-    http_response_code($statusCode);
-    
-    // Set the content type header to indicate a JSON response.
-    header('Content-Type: application/json');
-    
-    // Encode the data array into a JSON string and output it.
-    echo json_encode($data);
-    
-    // Terminate the script to prevent further execution.
-    exit();
-}
-
-/**
- * Sanitizes user input to prevent Cross-Site Scripting (XSS) attacks.
- * This should be used on any data that will be displayed back to the user.
- *
- * @param string $data The raw input data.
+ * Sanitizes user input to prevent XSS.
+ * @param string $data The input data.
  * @return string The sanitized data.
  */
 function sanitize_input($data) {
-    // Trim whitespace from the beginning and end of the string.
     $data = trim($data);
-    // Remove backslashes.
     $data = stripslashes($data);
-    // Convert special characters to HTML entities.
-    $data = htmlspecialchars($data, ENT_QUOTES, 'UTF-8');
+    $data = htmlspecialchars($data);
     return $data;
 }
 
 /**
- * A simple function to check if a user is logged in.
- *
- * @return bool True if the user is logged in, false otherwise.
+ * Sends a standardized JSON response and exits the script.
+ * @param array $response_data The associative array to be sent as JSON.
+ * @param int $http_code The HTTP status code to send.
+ */
+function send_json_response($response_data, $http_code = 200) {
+    header('Content-Type: application/json');
+    http_response_code($http_code);
+    echo json_encode($response_data);
+    exit();
+}
+
+/**
+ * Checks if a user is currently logged in.
+ * @return bool True if logged in, false otherwise.
  */
 function is_logged_in() {
     return isset($_SESSION['user_id']);
 }
 
 /**
- * Generates a secure random token for things like password resets.
- *
- * @param int $length The length of the token to generate.
- * @return string The generated token in hexadecimal format.
+ * Checks if the logged-in user is an administrator.
+ * @return bool True if user is an admin, false otherwise.
  */
-function generate_token($length = 32) {
-    return bin2hex(random_bytes($length));
+function is_admin() {
+    return is_logged_in() && isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
 }
 
-// You can add more helper functions here as the application grows,
-// such as functions for logging errors, validating emails, etc.
-?>
+/**
+ * Logs an administrator's action to the activity log table.
+ * @param mysqli $conn The database connection object.
+ * @param string $action The action performed (e.g., 'CREATE_USER', 'UPDATE_PRODUCT').
+ * @param string $details A description of the action.
+ */
+function log_activity($conn, $action, $details) {
+    if (!is_admin()) return; // Only log actions for admins
+
+    $admin_id = $_SESSION['user_id'];
+    $ip_address = $_SERVER['REMOTE_ADDR'];
+
+    $stmt = $conn->prepare("INSERT INTO activity_log (user_id, action, details, ip_address) VALUES (?, ?, ?, ?)");
+    if ($stmt) {
+        $stmt->bind_param("isss", $admin_id, $action, $details, $ip_address);
+        $stmt->execute();
+        $stmt->close();
+    }
+}
+
+/**
+ * Redirects the user to a specified URL.
+ * @param string $url The URL to redirect to.
+ */
+function redirect($url) {
+    header("Location: " . $url);
+    exit();
+}
+

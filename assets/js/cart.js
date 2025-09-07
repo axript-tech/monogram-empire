@@ -1,9 +1,72 @@
 $(document).ready(function() {
 
+    // =================================================================
+    // 1. UI HELPERS (Confirmation & Toasts)
+    // =================================================================
+    const toastContainer = $('#toast-container');
+    const confirmationModal = $('#confirmation-modal');
+
+    /**
+     * Shows a toast notification.
+     * @param {string} message - The message to display.
+     * @param {boolean} isSuccess - True for success, false for error.
+     */
+    function showToast(message, isSuccess = true) {
+        const icon = isSuccess ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-exclamation-circle"></i>';
+        const bgColor = isSuccess ? 'bg-green-500' : 'bg-red-500';
+        const toast = $(`<div class="opacity-0 transform translate-y-2 ${bgColor} text-white p-4 rounded-lg shadow-lg flex items-center mb-2 transition-all duration-300"><div class="mr-3">${icon}</div><div>${message}</div></div>`);
+        
+        toastContainer.append(toast);
+        setTimeout(() => {
+            toast.removeClass('opacity-0 translate-y-2');
+        }, 10); 
+
+        setTimeout(() => {
+            toast.addClass('opacity-0');
+            toast.on('transitionend', () => toast.remove());
+        }, 4000);
+    }
+
+    /**
+     * Shows a confirmation modal.
+     * @param {object} options - Configuration for the modal.
+     */
+    function showConfirmation({ title, message, confirmText, onConfirm }) {
+        confirmationModal.find('#confirmation-title').text(title);
+        confirmationModal.find('#confirmation-message').text(message);
+        const confirmBtn = confirmationModal.find('#confirm-action-btn');
+        confirmBtn.text(confirmText);
+        
+        confirmBtn.off('click').on('click', () => { 
+            onConfirm(); 
+            confirmationModal.addClass('hidden'); 
+        });
+        
+        confirmationModal.find('#confirm-cancel-btn').off('click').on('click', () => confirmationModal.addClass('hidden'));
+        
+        confirmationModal.removeClass('hidden');
+    }
+
+
+    // =================================================================
+    // 2. PRODUCT DETAILS PAGE SPECIFIC LOGIC
+    // =================================================================
+
+    /**
+     * Handles thumbnail clicks to change the main product image.
+     */
+    $('.thumbnail-image').on('click', function() {
+        const newImageSrc = $(this).attr('src');
+        $('#main-product-image').attr('src', newImageSrc);
+        $('.thumbnail-image').removeClass('border-brand-gold').addClass('border-transparent');
+        $(this).removeClass('border-transparent').addClass('border-brand-gold');
+    });
+
+    $('.thumbnail-image').first().addClass('border-brand-gold').removeClass('border-transparent');
+
+
     /**
      * Helper function to display messages on the product details page.
-     * @param {string} message - The message to display.
-     * @param {boolean} isSuccess - True for a success message, false for an error.
      */
     function showCartMessage(message, isSuccess) {
         const messageContainer = $('#add-to-cart-message-container');
@@ -12,14 +75,13 @@ $(document).ready(function() {
         const messageHtml = `<div class="border px-4 py-3 rounded relative ${isSuccess ? successClasses : errorClasses}" role="alert">${message}</div>`;
         
         messageContainer.html(messageHtml).slideDown();
-        setTimeout(() => messageContainer.slideUp(), 4000); // Hide after 4 seconds
+        setTimeout(() => messageContainer.slideUp(), 4000);
     }
 
     /**
      * Checks if the current product is already in the cart and updates the button state.
      */
     function checkCartStatusForProductPage() {
-        // This function should only run on the product details page
         if ($('#add-to-cart-form').length) {
             const urlParams = new URLSearchParams(window.location.search);
             const productId = urlParams.get('id');
@@ -34,11 +96,10 @@ $(document).ready(function() {
                         if (isInCart) {
                             const addToCartButton = $('#add-to-cart-form button[type="submit"]');
                             addToCartButton.prop('disabled', true).html('<i class="fas fa-check-circle mr-2"></i> In Cart');
-                            addToCartButton.removeClass('bg-brand-gold hover:bg-yellow-300').addClass('bg-gray-400 cursor-not-allowed');
+                            addToCartButton.removeClass('bg-brand-dark hover:bg-gray-700').addClass('bg-gray-400 cursor-not-allowed');
                         }
                     }
                 }
-                // No error handling needed here, if it fails, the button just remains active.
             });
         }
     }
@@ -74,36 +135,40 @@ $(document).ready(function() {
                 if (response.success) {
                     showCartMessage(response.message, true);
                     $('#cart-item-count').text(response.total_items);
-                    // Permanently change the button state on success
                     addToCartButton.html('<i class="fas fa-check-circle mr-2"></i> In Cart');
-                    addToCartButton.removeClass('bg-brand-gold hover:bg-yellow-300').addClass('bg-gray-400 cursor-not-allowed');
+                    addToCartButton.removeClass('bg-brand-dark hover:bg-gray-700').addClass('bg-gray-400 cursor-not-allowed');
                 } else {
                     showCartMessage(response.message, false);
-                    // Re-enable the button if another error occurred, but keep it disabled if already in cart
                     if(response.message.toLowerCase().includes('already in your cart')) {
                          addToCartButton.html('<i class="fas fa-check-circle mr-2"></i> In Cart');
-                         addToCartButton.removeClass('bg-brand-gold hover:bg-yellow-300').addClass('bg-gray-400 cursor-not-allowed');
+                         addToCartButton.removeClass('bg-brand-dark hover:bg-gray-700').addClass('bg-gray-400 cursor-not-allowed');
                     } else {
                         addToCartButton.prop('disabled', false).html('<i class="fas fa-shopping-cart mr-2"></i> Add to Cart');
                     }
                 }
             },
             error: function(jqXHR) {
-                // Re-enable the button on failure
-                addToCartButton.prop('disabled', false).html('<i class="fas fa-shopping-cart mr-2"></i> Add to Cart');
-                if (jqXHR.status === 401) {
-                    showCartMessage('Please log in to add items to your cart.', false);
-                    setTimeout(() => window.location.href = 'login.php', 2000);
+                const response = jqXHR.responseJSON;
+                if (response && response.message) {
+                    showCartMessage(response.message, false);
+                    if (response.message.toLowerCase().includes('already in your cart')) {
+                        addToCartButton.html('<i class="fas fa-check-circle mr-2"></i> In Cart');
+                        addToCartButton.removeClass('bg-brand-dark hover:bg-gray-700').addClass('bg-gray-400 cursor-not-allowed');
+                    } else {
+                         addToCartButton.prop('disabled', false).html('<i class="fas fa-shopping-cart mr-2"></i> Add to Cart');
+                    }
                 } else {
                     showCartMessage('An unexpected error occurred. Please try again.', false);
+                    addToCartButton.prop('disabled', false).html('<i class="fas fa-shopping-cart mr-2"></i> Add to Cart');
                 }
             }
         });
     });
 
-    /**
-     * Dynamically loads cart items on the cart.php page.
-     */
+    // =================================================================
+    // 3. CART PAGE SPECIFIC LOGIC
+    // =================================================================
+
     if (window.location.pathname.endsWith('cart.php')) {
         function loadCart() {
             $.ajax({
@@ -151,13 +216,12 @@ $(document).ready(function() {
                             cartTableBody.append(row);
                         });
 
-                        // Use a more reliable number formatting method
                         const formattedSubtotal = parseFloat(response.subtotal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                         summaryContainer.find('#summary-subtotal').text('₦' + formattedSubtotal);
                         summaryContainer.find('#summary-total').text('₦' + formattedSubtotal);
 
                     } else {
-                        if (response.message.includes('logged in')) {
+                         if (response.message.includes('logged in')) {
                              $('#cart-container').html(`
                                 <div class="text-center py-12">
                                     <i class="fas fa-user-lock text-6xl text-gray-300 mb-4"></i>
@@ -178,48 +242,45 @@ $(document).ready(function() {
         }
         loadCart();
 
-        /**
-         * Handles removing an item from the cart.
-         */
         $(document).on('click', '.remove-item-btn', function() {
             const itemId = $(this).data('item-id');
             
-            if (!confirm('Are you sure you want to remove this item from your cart?')) {
-                return;
-            }
-
-            $.ajax({
-                url: 'api/cart/remove.php',
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ cart_item_id: itemId }),
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        loadCart(); // Reloads the cart table
-                        // Fetch and update the header cart count after removal
-                        $.ajax({
-                            url: 'api/cart/count.php',
-                            method: 'GET',
-                            dataType: 'json',
-                            success: function(countResponse) {
-                                if (countResponse.success) {
-                                    $('#cart-item-count').text(countResponse.item_count);
-                                }
+            showConfirmation({
+                title: 'Remove Item',
+                message: 'Are you sure you want to remove this item from your cart?',
+                confirmText: 'Remove',
+                onConfirm: function() {
+                    $.ajax({
+                        url: 'api/cart/remove.php',
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ cart_item_id: itemId }),
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                showToast('Item removed successfully.', true);
+                                loadCart(); // Reloads the cart table
+                                // Fetch and update the header cart count
+                                $.get('api/cart/count.php', (countResponse) => {
+                                    if(countResponse.success) $('#cart-item-count').text(countResponse.item_count);
+                                });
+                            } else {
+                                showToast(response.message, false);
                             }
-                        });
-                    } else {
-                        alert('Error: ' + response.message);
-                    }
-                },
-                error: function() {
-                    alert('An error occurred while removing the item.');
+                        },
+                        error: function() {
+                            showToast('An error occurred while removing the item.', false);
+                        }
+                    });
                 }
             });
         });
     }
     
-    // --- Initial Load ---
+    // =================================================================
+    // 4. INITIAL LOAD
+    // =================================================================
     checkCartStatusForProductPage();
 
 });
+

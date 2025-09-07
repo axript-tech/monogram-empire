@@ -1,40 +1,39 @@
-<?php include 'includes/header.php'; ?>
+<?php 
+include 'includes/auth_check.php';
+include 'includes/header.php'; 
+?>
 
 <!-- Page Title -->
-<h2 class="text-3xl font-bold text-brand-dark mb-6">Activity Log</h2>
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-3xl font-bold text-brand-dark">Activity Log</h2>
+</div>
 
 <!-- Activity Log Table -->
 <div class="bg-white p-6 rounded-lg shadow-md">
-    <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-bold text-brand-dark">Recent Admin Activities</h3>
-    </div>
     <div class="overflow-x-auto">
         <table class="min-w-full text-left">
-            <thead class="bg-brand-light-gray">
-                <tr>
-                    <th class="py-3 px-4 font-semibold">Log ID</th>
-                    <th class="py-3 px-4 font-semibold">Admin User</th>
-                    <th class="py-3 px-4 font-semibold">Action</th>
-                    <th class="py-3 px-4 font-semibold">Details</th>
-                    <th class="py-3 px-4 font-semibold">IP Address</th>
-                    <th class="py-3 px-4 font-semibold">Timestamp</th>
+            <thead>
+                <tr class="border-b">
+                    <th class="py-2 px-4">Date & Time</th>
+                    <th class="py-2 px-4">Admin</th>
+                    <th class="py-2 px-4">Action</th>
+                    <th class="py-2 px-4">Details</th>
+                    <th class="py-2 px-4">IP Address</th>
                 </tr>
             </thead>
             <tbody id="activity-log-table-body" class="text-gray-600 text-sm">
-                <!-- Log data will be loaded here by JavaScript -->
+                <!-- Log rows will be loaded here by JavaScript -->
                 <tr>
-                    <td colspan="6" class="text-center py-12">
-                        <i class="fas fa-spinner fa-spin text-4xl text-gray-300"></i>
-                        <p class="mt-2 text-gray-500">Loading activity log...</p>
-                    </td>
+                    <td colspan="5" class="text-center py-8 text-gray-500">Loading activity log...</td>
                 </tr>
             </tbody>
         </table>
     </div>
-    <!-- Pagination -->
-    <div id="pagination-container" class="mt-6 flex justify-end">
+    <!-- Pagination Container -->
+    <div id="pagination-container" class="mt-6 flex justify-center">
         <!-- Pagination links will be loaded here -->
     </div>
 </div>
 
 <?php include 'includes/footer.php'; ?>
+

@@ -51,7 +51,7 @@ $stmt->execute();
 $result = $stmt->get_result();
 if ($product = $result->fetch_assoc()) {
     $file_path = $product['digital_file_url'];
-    $full_server_path = __DIR__ . $file_path; // Assumes /uploads/ is at the root
+    $full_server_path = __DIR__ . '/' . $file_path; // Assumes /uploads/ is at the root
 
     if ($file_path && file_exists($full_server_path)) {
         // Set headers to force download

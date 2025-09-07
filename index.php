@@ -21,7 +21,7 @@ $conn->close();
     <div class="swiper-wrapper">
         <!-- Slide 1 -->
         <div class="swiper-slide relative bg-brand-dark text-white">
-            <img src="https://images.pexels.com/photos/714263/pexels-photo-714263.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" class="absolute inset-0 w-full h-full object-cover opacity-40">
+            <img src="assets/images/bespoke.png" class="absolute inset-0 w-full h-full object-cover opacity-40">
             <div class="relative container mx-auto px-6 h-full flex flex-col justify-center items-center text-center py-24 md:py-32">
                 <h1 class="text-4xl md:text-6xl font-bold leading-tight mb-4" style="font-family: 'Playfair Display', serif;">
                     Your Identity, <span class="text-brand-gold">Elegantly Stitched</span>
@@ -36,7 +36,7 @@ $conn->close();
         </div>
         <!-- Slide 2 -->
         <div class="swiper-slide relative bg-brand-dark text-white">
-            <img src="https://images.pexels.com/photos/8374503/pexels-photo-8374503.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" class="absolute inset-0 w-full h-full object-cover opacity-40">
+            <img src="assets/images/bespoke2.png" class="absolute inset-0 w-full h-full object-cover opacity-40">
             <div class="relative container mx-auto px-6 h-full flex flex-col justify-center items-center text-center py-24 md:py-32">
                 <h1 class="text-4xl md:text-6xl font-bold leading-tight mb-4" style="font-family: 'Playfair Display', serif;">
                     Truly <span class="text-brand-gold">Bespoke Service</span>
@@ -51,7 +51,7 @@ $conn->close();
         </div>
         <!-- Slide 3 -->
         <div class="swiper-slide relative bg-brand-dark text-white">
-            <img src="https://images.pexels.com/photos/1598508/pexels-photo-1598508.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" class="absolute inset-0 w-full h-full object-cover opacity-40">
+            <img src="assets/images/bespoke5.jpg" class="absolute inset-0 w-full h-full object-cover opacity-40">
             <div class="relative container mx-auto px-6 h-full flex flex-col justify-center items-center text-center py-24 md:py-32">
                 <h1 class="text-4xl md:text-6xl font-bold leading-tight mb-4" style="font-family: 'Playfair Display', serif;">
                     Freshly <span class="text-brand-gold">Designed</span>
@@ -152,3 +152,4 @@ $conn->close();
 <?php include 'includes/footer.php'; ?>
 <!-- SwiperJS -->
 <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+

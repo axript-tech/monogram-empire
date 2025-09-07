@@ -1,53 +1,76 @@
 $(document).ready(function() {
+    const formContainer = $('#request-form-container');
+    const successContainer = $('#success-container');
+    const form = $('#preorder-form');
+    const messageContainer = $('#preorder-message-container');
+    const submitButton = form.find('button[type="submit"]');
+    const buttonText = submitButton.find('.button-text');
+    const buttonSpinner = submitButton.find('.button-spinner');
 
-    function showPreorderMessage(message, isSuccess) {
-        const messageContainer = $('#preorder-message-container');
+    function showMessage(message, isSuccess) {
         const successClasses = 'bg-green-100 border-green-400 text-green-700';
         const errorClasses = 'bg-red-100 border-red-400 text-red-700';
         const messageHtml = `<div class="border px-4 py-3 rounded relative ${isSuccess ? successClasses : errorClasses}" role="alert">${message}</div>`;
         
         messageContainer.html(messageHtml).slideDown();
+        setTimeout(() => messageContainer.slideUp(), 5000);
     }
 
-    $('#service-request-form').on('submit', function(e) {
+    form.on('submit', function(e) {
         e.preventDefault();
-        $('#preorder-message-container').slideUp().empty();
-        const submitButton = $(this).find('button[type="submit"]');
-        submitButton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...');
+        messageContainer.slideUp().empty();
+        
+        // Show loading state
+        buttonText.text('Submitting...');
+        buttonSpinner.show();
+        submitButton.prop('disabled', true);
 
-        // Use FormData to handle file uploads
+        // Use FormData for file uploads
         const formData = new FormData(this);
 
         $.ajax({
             url: 'api/preorder/submit.php',
             method: 'POST',
             data: formData,
-            processData: false, // Important for FormData
-            contentType: false, // Important for FormData
             dataType: 'json',
+            contentType: false, // Important for file uploads
+            processData: false, // Important for file uploads
             success: function(response) {
                 if (response.success) {
-                    showPreorderMessage(response.message, true);
-                    $('#service-request-form')[0].reset();
-                    // Optionally, redirect to the tracking page
-                    setTimeout(() => {
-                        window.location.href = `track-preorder.php?tracking_id=${response.tracking_id}`;
-                    }, 3000);
+                    // Hide form and show success message
+                    formContainer.fadeOut(() => {
+                        $('#success-tracking-id').text(response.tracking_id);
+                        $('#success-track-link').attr('href', `track-preorder.php?tracking_id=${response.tracking_id}`);
+                        successContainer.fadeIn();
+                    });
                 } else {
-                    showPreorderMessage(response.message, false);
-                    submitButton.prop('disabled', false).text('Request a Quote');
+                    const errorMessage = response.errors ? response.errors.join('<br>') : response.message;
+                    showMessage(errorMessage, false);
                 }
             },
             error: function(jqXHR) {
-                if (jqXHR.status === 401) {
-                    showPreorderMessage('You must be logged in to submit a request.', false);
+                if(jqXHR.status === 401) {
+                     showMessage('You must be logged in to submit a request.', false);
                      setTimeout(() => window.location.href = 'login.php', 2000);
                 } else {
-                    showPreorderMessage('An unexpected error occurred. Please try again.', false);
+                    showMessage('An unexpected error occurred. Please try again.', false);
                 }
-                submitButton.prop('disabled', false).text('Request a Quote');
+            },
+            complete: function() {
+                // Restore button state
+                buttonText.text('Request a Quote');
+                buttonSpinner.hide();
+                submitButton.prop('disabled', false);
             }
         });
     });
 
+    // Handle "Make Another Request" button click
+    $('#make-another-request-btn').on('click', function() {
+        successContainer.fadeOut(() => {
+            form[0].reset(); // Reset the form fields
+            formContainer.fadeIn();
+        });
+    });
 });
+

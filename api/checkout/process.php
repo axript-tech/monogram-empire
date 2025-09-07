@@ -86,7 +86,9 @@ try {
 
     // --- Prepare Data for Paystack ---
     // IMPORTANT: In a real app, get your key from a secure config file.
-    $paystack_public_key = 'pk_test_00b7531c09eed64cf7af3e4cc42efc753f45dd6d'; // Replace with your actual Paystack Public Key
+   // $paystack_public_key = 'pk_test_00b7531c09eed64cf7af3e4cc42efc753f45dd6d'; // Replace with your actual Paystack Public Key Axript
+    //$paystack_public_key = 'pk_test_585e50464c37b50e231c88570b96604d0fff0740'; // Replace with your actual Paystack Public Key
+    $paystack_public_key = 'pk_test_b7a14711f4dc791c9890e259546b476c95c7f6d4'; // Replace with your actual Paystack Public Key
 
     send_json_response([
         'success' => true,

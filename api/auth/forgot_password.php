@@ -1,79 +1,64 @@
 <?php
-// Monogram Empire - Forgot Password API
+// Note: The path is corrected to go up one level from the 'auth' folder, then another from 'api'.
+include_once '../../includes/db_connect.php';
+include_once '../../includes/functions.php';
+include_once '../../includes/send_email.php'; // Include our reusable email function
 
-// Include necessary files
-require_once '../../includes/db_connect.php';
-require_once '../../includes/functions.php';
+$data = json_decode(file_get_contents('php://input'), true);
 
-// This API endpoint should only accept POST requests.
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    send_json_response(['error' => 'Invalid request method.'], 405);
-}
-
-// Get the raw POST data
-$json_data = file_get_contents('php://input');
-$data = json_decode($json_data, true);
-
-// --- Validation ---
-if (empty($data['email']) || !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-    send_json_response(['success' => false, 'message' => 'A valid email is required.'], 400);
+if (!isset($data['email'])) {
+    send_json_response(['success' => false, 'message' => 'Email is required.'], 400);
 }
 
 $email = sanitize_input($data['email']);
 
-// --- Find User ---
-// Check if a user with this email exists
-$stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+// Check if user exists
+$stmt = $conn->prepare("SELECT id, first_name FROM users WHERE email = ?");
 $stmt->bind_param("s", $email);
 $stmt->execute();
 $result = $stmt->get_result();
-
-if ($result->num_rows === 0) {
-    // To prevent user enumeration, we send a generic success message even if the email doesn't exist.
-    // The user is told to check their email, but no email is actually sent.
-    send_json_response(['success' => true, 'message' => 'If an account with that email exists, a password reset link has been sent.'], 200);
-}
-
 $user = $result->fetch_assoc();
-$user_id = $user['id'];
 $stmt->close();
 
-// --- Generate and Store Reset Token ---
-$token = generate_token();
-$expires_at = date('Y-m-d H:i:s', strtotime('+1 hour')); // Token is valid for 1 hour
+// To prevent user enumeration, we always send a success message.
+// The actual email sending only happens if the user exists.
+if ($user) {
+    // Generate a secure token
+    $token = bin2hex(random_bytes(32));
+    $expires = date("U") + 1800; // Token expires in 30 minutes
 
-// Before inserting a new token, it's good practice to delete any old tokens for this user.
-$stmt = $conn->prepare("DELETE FROM password_resets WHERE user_id = ?");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$stmt->close();
+    // Store the token in the database
+    $stmt = $conn->prepare("UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?");
+    $stmt->bind_param("sii", $token, $expires, $user['id']);
+    $stmt->execute();
+    $stmt->close();
 
-// Insert the new token
-$stmt = $conn->prepare("INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)");
-$stmt->bind_param("iss", $user_id, $token, $expires_at);
-
-if ($stmt->execute()) {
-    // --- Simulate Sending Email ---
-    // In a real application, you would use a mail library (like PHPMailer) to send an email.
-    // For this example, we will construct the link and can return it in the response for testing.
+    // --- Prepare and Send Email ---
+    $reset_link = "http://{$_SERVER['HTTP_HOST']}/reset-password.php?token={$token}&email=" . urlencode($email);
     
-    // IMPORTANT: Replace 'http://yourwebsite.com' with your actual domain
-    $reset_link = "http://yourwebsite.com/reset-password.php?token=" . urlencode($token) . "&email=" . urlencode($email);
+    // Get site name for email template
+    $site_name_result = $conn->query("SELECT setting_value FROM settings WHERE setting_key = 'site_name'");
+    $site_name = $site_name_result ? $site_name_result->fetch_assoc()['setting_value'] : 'Monogram Empire';
+    $name = $site_name;
 
-    // --- Mail Sending Logic (Simulated) ---
-    // $subject = "Password Reset Request for Monogram Empire";
-    // $body = "Please click the following link to reset your password: " . $reset_link;
-    // $headers = "From: no-reply@monogramempire.com";
-    // mail($email, $subject, $body, $headers); // This would be the actual mail function call
+    $email_title = "Password Reset Request";
+    $email_content = "
+        <p>Hello " . htmlspecialchars($user['first_name']) . ",</p>
+        <p>We received a request to reset the password for your account. If you did not make this request, you can safely ignore this email.</p>
+        <p>To reset your password, please click the button below. This link is valid for 30 minutes.</p>
+        <p style='text-align: center; margin: 30px 0;'>
+            <a href='{$reset_link}' style='background-color: #FFD700; color: #1a1a1a; padding: 15px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;'>Reset Your Password</a>
+        </p>
+        <p>If you're having trouble with the button, you can copy and paste the following URL into your browser:</p>
+        <p><a href='{$reset_link}' style='color: #007bff; word-break: break-all;'>{$reset_link}</a></p>
+    ";
 
-    // Send the generic success response
-    send_json_response(['success' => true, 'message' => 'If an account with that email exists, a password reset link has been sent.'], 200);
-
-} else {
-    // Database error
-    send_json_response(['success' => false, 'message' => 'An error occurred. Please try again later.'], 500);
+    // Use the reusable function to send the email
+    // Note: We don't need to handle the return value here, as we send a generic success message regardless.
+    send_email($conn, $email, $user['first_name'], $email_title, $email_content, $name);
 }
 
-$stmt->close();
+send_json_response(['success' => true, 'message' => 'If an account with that email exists, a password reset link has been sent.']);
+
 $conn->close();
-?>
+

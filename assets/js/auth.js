@@ -20,8 +20,14 @@ $(document).ready(function() {
     $('#register-form').on('submit', function(e) {
         e.preventDefault();
         $('#auth-message-container').slideUp().empty();
+
         const submitButton = $(this).find('button[type="submit"]');
-        submitButton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Creating Account...');
+        const buttonText = submitButton.find('.button-text');
+        const buttonSpinner = submitButton.find('.button-spinner');
+        
+        buttonText.hide();
+        buttonSpinner.show();
+        submitButton.prop('disabled', true);
 
         const formData = {
             first_name: $('#first_name').val(),
@@ -33,12 +39,16 @@ $(document).ready(function() {
 
         if (formData.password !== formData.confirm_password) {
             showAuthMessage("Passwords do not match.", false);
-            submitButton.prop('disabled', false).text('Create Account');
+            buttonText.show();
+            buttonSpinner.hide();
+            submitButton.prop('disabled', false);
             return;
         }
         if (!$('input[type=checkbox]').is(':checked')) {
             showAuthMessage("You must agree to the terms and conditions.", false);
-            submitButton.prop('disabled', false).text('Create Account');
+            buttonText.show();
+            buttonSpinner.hide();
+            submitButton.prop('disabled', false);
             return;
         }
 
@@ -51,21 +61,25 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     showAuthMessage(response.message, true);
-                    $('#register-form')[0].reset();
                     setTimeout(() => window.location.href = 'index.php', 2000);
                 } else {
                     const errorMessage = response.errors ? response.errors.join('<br>') : response.message;
                     showAuthMessage(errorMessage, false);
-                    submitButton.prop('disabled', false).text('Create Account');
                 }
             },
             error: function(jqXHR) {
-                let errorMessage = 'An unexpected error occurred. Please try again later.';
-                if (jqXHR.responseJSON && jqXHR.responseJSON.message) {
-                    errorMessage = jqXHR.responseJSON.message;
+                const response = jqXHR.responseJSON;
+                if (response && response.message) {
+                    const errorMessage = response.errors ? response.errors.join('<br>') : response.message;
+                    showAuthMessage(errorMessage, false);
+                } else {
+                    showAuthMessage('An unexpected error occurred. Please try again later.', false);
                 }
-                showAuthMessage(errorMessage, false);
-                submitButton.prop('disabled', false).text('Create Account');
+            },
+            complete: function() {
+                buttonText.show();
+                buttonSpinner.hide();
+                submitButton.prop('disabled', false);
             }
         });
     });
@@ -76,8 +90,14 @@ $(document).ready(function() {
     $('#login-form').on('submit', function(e) {
         e.preventDefault();
         $('#auth-message-container').slideUp().empty();
+
         const submitButton = $(this).find('button[type="submit"]');
-        submitButton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Logging In...');
+        const buttonText = submitButton.find('.button-text');
+        const buttonSpinner = submitButton.find('.button-spinner');
+
+        buttonText.hide();
+        buttonSpinner.show();
+        submitButton.prop('disabled', true);
 
         const formData = {
             email: $('#email').val(),
@@ -96,12 +116,22 @@ $(document).ready(function() {
                     setTimeout(() => window.location.href = 'order-history.php', 1500);
                 } else {
                     showAuthMessage(response.message, false);
-                    submitButton.prop('disabled', false).text('Log In');
+                    $('#password').val('');
                 }
             },
-            error: function() {
-                showAuthMessage('An unexpected error occurred. Please try again later.', false);
-                submitButton.prop('disabled', false).text('Log In');
+            error: function(jqXHR) {
+                const response = jqXHR.responseJSON;
+                if (response && response.message) {
+                    showAuthMessage(response.message, false);
+                } else {
+                    showAuthMessage('An unexpected error occurred. Please try again later.', false);
+                }
+                $('#password').val('');
+            },
+            complete: function() {
+                buttonText.show();
+                buttonSpinner.hide();
+                submitButton.prop('disabled', false);
             }
         });
     });
@@ -113,7 +143,12 @@ $(document).ready(function() {
         e.preventDefault();
         $('#auth-message-container').slideUp().empty();
         const submitButton = $(this).find('button[type="submit"]');
-        submitButton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Sending...');
+        const buttonText = submitButton.find('.button-text');
+        const buttonSpinner = submitButton.find('.button-spinner');
+
+        buttonText.hide();
+        buttonSpinner.show();
+        submitButton.prop('disabled', true);
         
         const formData = { email: $('#email').val() };
 
@@ -125,11 +160,19 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(response) {
                 showAuthMessage(response.message, true);
-                // Don't re-enable the button on success to prevent spamming
             },
-            error: function() {
-                showAuthMessage('An unexpected error occurred.', false);
-                submitButton.prop('disabled', false).text('Send Reset Link');
+            error: function(jqXHR) {
+                const response = jqXHR.responseJSON;
+                if (response && response.message) {
+                    showAuthMessage(response.message, false);
+                } else {
+                    showAuthMessage('An unexpected error occurred.', false);
+                }
+            },
+            complete: function() {
+                buttonText.show();
+                buttonSpinner.hide();
+                submitButton.prop('disabled', false);
             }
         });
     });
@@ -140,9 +183,15 @@ $(document).ready(function() {
     $('#reset-password-form').on('submit', function(e) {
         e.preventDefault();
         $('#auth-message-container').slideUp().empty();
-        const submitButton = $(this).find('button[type="submit"]');
-        submitButton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Resetting...');
         
+        const submitButton = $(this).find('button[type="submit"]');
+        const buttonText = submitButton.find('.button-text');
+        const buttonSpinner = submitButton.find('.button-spinner');
+ 
+        buttonText.hide();
+        buttonSpinner.show();
+        submitButton.prop('disabled', true);
+
         const formData = {
             token: $('input[name="token"]').val(),
             email: $('input[name="email"]').val(),
@@ -152,7 +201,9 @@ $(document).ready(function() {
 
         if (formData.new_password !== formData.confirm_new_password) {
             showAuthMessage("New passwords do not match.", false);
-            submitButton.prop('disabled', false).text('Reset Password');
+            buttonText.show();
+            buttonSpinner.hide();
+            submitButton.prop('disabled', false);
             return;
         }
 
@@ -168,14 +219,23 @@ $(document).ready(function() {
                     setTimeout(() => window.location.href = 'login.php', 2000);
                 } else {
                     showAuthMessage(response.message, false);
-                    submitButton.prop('disabled', false).text('Reset Password');
                 }
             },
-            error: function() {
-                showAuthMessage('An unexpected error occurred.', false);
-                submitButton.prop('disabled', false).text('Reset Password');
+            error: function(jqXHR) {
+                const response = jqXHR.responseJSON;
+                if (response && response.message) {
+                    showAuthMessage(response.message, false);
+                } else {
+                    showAuthMessage('An unexpected error occurred. Please try again later.', false);
+                }
+            },
+            complete: function() {
+                buttonText.show();
+                buttonSpinner.hide();
+                submitButton.prop('disabled', false);
             }
         });
     });
 
 });
+

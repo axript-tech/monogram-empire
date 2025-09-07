@@ -1,92 +1,134 @@
-<?php 
-include 'includes/functions.php';
-include 'includes/header.php'; 
-include 'includes/db_connect.php';
+<?php
+// This MUST be the very first line of the file.
+include_once 'includes/functions.php';
+include_once 'includes/db_connect.php';
 
-// A user must be logged in to track their order.
-if (!is_logged_in()) {
-    header("Location: login.php");
-    exit();
-}
+$request_details = null;
+$error_message = '';
+$tracking_id_from_url = '';
 
-$user_id = $_SESSION['user_id'];
-$tracking_id_from_url = isset($_GET['tracking_id']) ? sanitize_input($_GET['tracking_id']) : '';
-$service_request = null;
+if (isset($_GET['tracking_id'])) {
+    $tracking_id_from_url = sanitize_input($_GET['tracking_id']);
+    if (!is_logged_in()) {
+        redirect('login.php?redirect=track-preorder.php&tracking_id=' . urlencode($tracking_id_from_url));
+    }
 
-// If a tracking ID is present in the URL, fetch its details
-if (!empty($tracking_id_from_url)) {
+    $user_id = $_SESSION['user_id'];
+
     $stmt = $conn->prepare("SELECT * FROM service_requests WHERE tracking_id = ? AND user_id = ?");
     $stmt->bind_param("si", $tracking_id_from_url, $user_id);
     $stmt->execute();
     $result = $stmt->get_result();
+
     if ($result->num_rows > 0) {
-        $service_request = $result->fetch_assoc();
+        $request_details = $result->fetch_assoc();
+    } else {
+        $error_message = "No custom request found with that tracking ID for your account.";
     }
     $stmt->close();
 }
-$conn->close();
+
+include 'includes/header.php';
 ?>
 
 <!-- Page Header -->
-<div class="relative bg-brand-dark text-white py-20">
-    <div class="absolute inset-0 bg-cover bg-center opacity-30" style="background-image: url('assets/images/hero-bg.jpg');"></div>
-    <div class="relative container mx-auto px-6 text-center">
-        <h1 class="text-4xl md:text-5xl font-bold" style="font-family: 'Playfair Display', serif;">Track Your Custom Order</h1>
-        <p class="text-lg text-gray-300 mt-2">Enter your tracking ID to see the status of your bespoke design.</p>
+<div class="bg-gray-100 py-16">
+    <div class="container mx-auto px-6 text-center">
+        <h1 class="text-4xl font-bold text-brand-dark">Track Your Custom Order</h1>
+        <p class="text-gray-600 mt-2">Enter your tracking ID to see the status of your bespoke design.</p>
     </div>
 </div>
 
-<!-- Tracking Section -->
-<section class="py-16 bg-white">
-    <div class="container mx-auto px-6 max-w-2xl">
-        <div class="bg-brand-light-gray p-8 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-bold text-brand-dark mb-6 text-center">Check Order Status</h2>
-            <form id="tracking-form" method="GET" action="track-preorder.php" class="mb-8">
-                <div class="flex">
-                    <input type="text" id="tracking_id" name="tracking_id" value="<?php echo htmlspecialchars($tracking_id_from_url); ?>" placeholder="Enter your tracking ID (e.g., ME-CUSTOM-XXXX)" required class="w-full px-4 py-3 bg-white border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-brand-gold">
-                    <button type="submit" class="bg-brand-gold text-brand-dark font-bold px-6 py-3 rounded-r-md hover:bg-yellow-300 transition-colors">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-            </form>
+<!-- Main Content -->
+<div class="container mx-auto px-10 py-16">
+    <div class="max-w-2xl mx-auto bg-white p-16 rounded-lg shadow-lg">
+        <form method="GET" action="track-preorder.php" class="mb-8">
+            <label for="tracking_id" class="block text-sm font-medium text-gray-700 mb-2">Tracking ID</label>
+            <div class="flex">
+                <input type="text" id="tracking_id" name="tracking_id" value="<?= htmlspecialchars($tracking_id_from_url) ?>" placeholder="e.g., ME-ABC123XYZ" required class="flex-grow px-4 py-3 bg-white border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-brand-gold">
+                <button type="submit" class="bg-brand-dark text-white font-bold px-6 py-3 rounded-r-md hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-search"></i> Track
+                </button>
+            </div>
+        </form>
 
-            <?php if ($service_request): ?>
-            <!-- Status Display -->
-            <div id="status-display" class="mt-12">
-                <h3 class="text-2xl font-bold text-brand-dark mb-6">Status for #<?php echo htmlspecialchars($service_request['tracking_id']); ?></h3>
-                <?php
-                    $statuses = ['pending', 'in_progress', 'awaiting_payment', 'completed'];
-                    $current_status_index = array_search($service_request['status'], $statuses);
-                ?>
-                <!-- Progress Tracker -->
-                <div class="relative">
-                    <div class="absolute left-0 top-3.5 w-full h-1 bg-gray-300"></div>
-                    <div class="absolute left-0 top-3.5 h-1 bg-brand-gold" style="width: <?php echo ($current_status_index / (count($statuses) - 1)) * 100; ?>%;"></div>
-                    <div class="flex justify-between items-center">
-                        <?php foreach ($statuses as $index => $status): ?>
-                        <div class="text-center z-10">
-                            <div class="w-8 h-8 <?php echo ($index <= $current_status_index) ? 'bg-brand-gold' : 'bg-gray-300'; ?> rounded-full flex items-center justify-center mx-auto">
-                                <i class="fas fa-check text-white"></i>
+        <?php if ($request_details) : ?>
+            <?php
+            $status = $request_details['status']; // e.g., pending, in_progress, completed
+           // $quote = $request_details['quote_amount'];
+            ?>
+            <div>
+                <h2 class="text-2xl font-bold text-brand-dark mb-6">Request Status: <span class="capitalize text-brand-gold"><?= str_replace('_', ' ', htmlspecialchars($status)) ?></span></h2>
+
+                <!-- Status Tracker -->
+                <div class="mb-12">
+                    <div class="flex items-center">
+                        <!-- Step 1: Request Received -->
+                        <div class="flex items-center text-brand-gold relative">
+                            <div class="rounded-full transition duration-500 ease-in-out h-12 w-12 border-2 border-brand-gold bg-brand-gold flex items-center justify-center">
+                                <i class="fas fa-file-alt text-xl text-white"></i>
                             </div>
-                            <p class="text-sm mt-2 font-semibold <?php echo ($index <= $current_status_index) ? 'text-brand-dark' : 'text-gray-500'; ?>"><?php echo ucfirst(str_replace('_', ' ', $status)); ?></p>
+                            <div class="absolute top-0 -ml-10 text-center mt-16 w-32 text-xs font-medium uppercase text-brand-gold">Request Received</div>
                         </div>
-                        <?php endforeach; ?>
+                        <div class="flex-auto border-t-2 transition duration-500 ease-in-out <?= in_array($status, ['in_progress', 'completed']) ? 'border-brand-gold' : 'border-gray-300' ?>"></div>
+
+                        <!-- Step 2: In Progress -->
+                        <div class="flex items-center <?= in_array($status, ['in_progress', 'completed']) ? 'text-brand-gold' : 'text-gray-500' ?> relative">
+                            <div class="rounded-full transition duration-500 ease-in-out h-12 w-12 border-2 <?= in_array($status, ['in_progress', 'completed']) ? 'border-brand-gold bg-brand-gold' : 'border-gray-300' ?> flex items-center justify-center">
+                                <i class="fas fa-pencil-ruler text-xl <?= in_array($status, ['in_progress', 'completed']) ? 'text-white' : '' ?>"></i>
+                            </div>
+                            <div class="absolute top-0 -ml-10 text-center mt-16 w-32 text-xs font-medium uppercase <?= in_array($status, ['in_progress', 'completed']) ? 'text-brand-gold' : 'text-gray-500' ?>">In Progress</div>
+                        </div>
+                        <div class="flex-auto border-t-2 transition duration-500 ease-in-out <?= $status === 'completed' ? 'border-brand-gold' : 'border-gray-300' ?>"></div>
+                        
+                        <!-- Step 3: Completed -->
+                        <div class="flex items-center <?= $status === 'completed' ? 'text-brand-gold' : 'text-gray-500' ?> relative">
+                            <div class="rounded-full transition duration-500 ease-in-out h-12 w-12 border-2 <?= $status === 'completed' ? 'border-brand-gold bg-brand-gold' : 'border-gray-300' ?> flex items-center justify-center">
+                                <i class="fas fa-check-circle text-xl <?= $status === 'completed' ? 'text-white' : '' ?>"></i>
+                            </div>
+                            <div class="absolute top-0 -ml-10 text-center mt-16 w-32 text-xs font-medium uppercase <?= $status === 'completed' ? 'text-brand-gold' : 'text-gray-500' ?>">Completed</div>
+                        </div>
                     </div>
                 </div>
-                <div class="mt-8 bg-white p-4 rounded-md text-center text-gray-600">
-                    <p><strong>Latest Update:</strong> Your request is currently "<?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $service_request['status']))); ?>".</p>
-                </div>
-            </div>
-            <?php elseif (!empty($tracking_id_from_url)): ?>
-            <!-- Not Found Message -->
-            <div class="mt-12 text-center">
-                <i class="fas fa-exclamation-circle text-4xl text-red-400 mb-4"></i>
-                <p class="text-gray-600">No custom order found with that tracking ID for your account.</p>
-            </div>
-            <?php endif; ?>
 
-        </div>
+
+                <!-- Request Details -->
+                <div class="border-t pt-6">
+                    <h3 class="font-bold text-lg mb-4">Request Summary</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p class="text-gray-500">Tracking ID</p>
+                            <p class="font-semibold text-brand-dark"><?= htmlspecialchars($request_details['tracking_id']) ?></p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500">Date Submitted</p>
+                            <p class="font-semibold text-brand-dark"><?= date('F j, Y', strtotime($request_details['created_at'])) ?></p>
+                        </div>
+                        <div class="col-span-full">
+                            <p class="text-gray-500">Requested Monogram</p>
+                            <p class="font-semibold text-brand-dark"><?= htmlspecialchars($request_details['design_name']) ?></p>
+                        </div>
+                         <div class="col-span-full">
+                            <p class="text-gray-500">Quoted Amount</p>
+                            <p class="font-semibold text-brand-dark text-lg">
+                                <?//= $quote ? format_currency($quote) : 'Awaiting Quote' ?>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        <?php elseif ($error_message) : ?>
+            <div class="text-center text-red-600 bg-red-100 border border-red-400 p-4 rounded-lg">
+                <p><?= htmlspecialchars($error_message) ?></p>
+            </div>
+        <?php else : ?>
+            <div class="text-center text-gray-500">
+                <p>Please enter your tracking ID above to see your request status.</p>
+            </div>
+        <?php endif; ?>
     </div>
-</section>
+</div>
 
 <?php include 'includes/footer.php'; ?>
+

@@ -1,106 +1,174 @@
 <?php 
-include 'includes/header.php'; 
-include '../includes/db_connect.php';
+include 'includes/auth_check.php';
+include '../includes/db_connect.php'; // Needed to fetch categories
 
 // Fetch categories for the modal dropdown
-$categories_result = $conn->query("SELECT id, name FROM categories ORDER BY name ASC");
-$categories = $categories_result->fetch_all(MYSQLI_ASSOC);
-$conn->close();
+$categories = [];
+$category_query = "SELECT id, name FROM categories ORDER BY name ASC";
+$category_result = $conn->query($category_query);
+if ($category_result) {
+    $categories = $category_result->fetch_all(MYSQLI_ASSOC);
+}
+
+include 'includes/header.php'; 
 ?>
 
-<!-- Page Title -->
-<h2 class="text-3xl font-bold text-brand-dark mb-6">Product Management</h2>
+<!-- Page Title & Add Button -->
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-3xl font-bold text-brand-dark">Product Management</h2>
+    <button id="add-product-btn" class="bg-brand-dark text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors flex items-center">
+        <i class="fas fa-plus mr-2"></i> Add New Product
+    </button>
+</div>
 
-<!-- Product Management Table -->
+<!-- Products Table -->
 <div class="bg-white p-6 rounded-lg shadow-md">
-    <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-bold text-brand-dark">All Products</h3>
-        <button id="add-product-btn" class="bg-brand-gold text-brand-dark font-bold py-2 px-4 rounded-full hover:bg-yellow-300 transition-colors">
-            <i class="fas fa-plus mr-2"></i>Add New Product
-        </button>
-    </div>
     <div class="overflow-x-auto">
         <table class="min-w-full text-left">
-            <thead class="bg-brand-light-gray">
-                <tr>
-                    <th class="py-3 px-4 font-semibold">Image</th>
-                    <th class="py-3 px-4 font-semibold">Product ID</th>
-                    <th class="py-3 px-4 font-semibold">Name</th>
-                    <th class="py-3 px-4 font-semibold">Category</th>
-                    <th class="py-3 px-4 font-semibold">Price</th>
-                    <th class="py-3 px-4 font-semibold">Actions</th>
+            <thead>
+                <tr class="border-b">
+                    <th class="py-2 px-4">Image</th>
+                    <th class="py-2 px-4">Name</th>
+                    <th class="py-2 px-4">Category</th>
+                    <th class="py-2 px-4">Price</th>
+                    <th class="py-2 px-4">Date Added</th>
+                    <th class="py-2 px-4">Actions</th>
                 </tr>
             </thead>
             <tbody id="products-table-body" class="text-gray-600 text-sm">
-                <!-- Product data will be loaded here by JavaScript -->
+                <!-- Product rows will be loaded here by JavaScript -->
+                <tr>
+                    <td colspan="6" class="text-center py-8 text-gray-500">Loading products...</td>
+                </tr>
             </tbody>
         </table>
     </div>
-    <!-- Pagination -->
-    <div id="pagination-container" class="mt-6 flex justify-end"></div>
+    <!-- Pagination Container -->
+    <div id="pagination-container" class="mt-6 flex justify-center">
+        <!-- Pagination links will be loaded here -->
+    </div>
 </div>
 
-<!-- Add/Edit Product Modal -->
-<div id="product-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-    <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <h2 id="product-modal-title" class="text-2xl font-bold text-brand-dark mb-6">Add New Product</h2>
-        <form id="product-form" enctype="multipart/form-data" class="flex-grow overflow-y-auto pr-4 custom-scrollbar">
-            <input type="hidden" id="product_id" name="product_id">
-            <div class="space-y-4">
-                <div>
-                    <label for="product_name" class="block text-gray-700 font-bold mb-2">Product Name</label>
-                    <input type="text" id="product_name" name="name" required class="w-full px-4 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-gold">
+<!-- Product Modal (for Add/Edit) - Redesigned with Steps -->
+<div id="product-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-3xl relative max-h-[90vh] flex flex-col">
+        <button class="close-modal-btn absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+            <i class="fas fa-times fa-lg"></i>
+        </button>
+        <h3 id="product-modal-title" class="text-2xl font-bold text-brand-dark mb-4">Add New Product</h3>
+        
+        <!-- Step Indicator -->
+        <div class="mb-6 border-b pb-4">
+            <div class="flex justify-between">
+                <div class="step-indicator flex-1 text-center" data-step="1">
+                    <span class="step-circle active">1</span>
+                    <p class="step-text active">Core Details</p>
                 </div>
+                <div class="step-indicator flex-1 text-center" data-step="2">
+                    <span class="step-circle">2</span>
+                    <p class="step-text">Images</p>
+                </div>
+                <div class="step-indicator flex-1 text-center" data-step="3">
+                    <span class="step-circle">3</span>
+                    <p class="step-text">Digital File</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="product-modal-loader" class="text-center py-12 hidden">
+             <i class="fas fa-spinner fa-spin text-4xl text-brand-gold"></i>
+             <p class="mt-2">Loading product details...</p>
+        </div>
+
+        <form id="product-form" class="flex-grow overflow-y-auto" enctype="multipart/form-data">
+            <input type="hidden" id="product_id" name="id">
+
+            <!-- Step 1: Core Details -->
+            <div class="form-step" data-step="1">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label for="category_id" class="block text-gray-700 font-bold mb-2">Category</label>
-                        <select id="category_id" name="category_id" required class="w-full px-4 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-gold">
+                        <label for="product_name" class="block text-sm font-medium text-gray-700">Product Name</label>
+                        <input type="text" id="product_name" name="name" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold">
+                    </div>
+                    <div>
+                        <label for="product_category" class="block text-sm font-medium text-gray-700">Category</label>
+                        <select id="product_category" name="category_id" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold">
+                            <option value="">Select a category</option>
                             <?php foreach ($categories as $category): ?>
-                                <option value="<?php echo $category['id']; ?>"><?php echo htmlspecialchars($category['name']); ?></option>
+                                <option value="<?= $category['id'] ?>"><?= htmlspecialchars($category['name']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div>
-                        <label for="price" class="block text-gray-700 font-bold mb-2">Price (&#8358;)</label>
-                        <input type="number" id="price" name="price" step="0.01" required class="w-full px-4 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-gold">
-                    </div>
                 </div>
-                <div>
-                    <label for="description" class="block text-gray-700 font-bold mb-2">Description</label>
-                    <textarea id="description" name="description" rows="4" required class="w-full px-4 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-gold"></textarea>
+                <div class="mt-4">
+                    <label for="product_price" class="block text-sm font-medium text-gray-700">Price (₦)</label>
+                    <input type="number" id="product_price" name="price" step="0.01" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold">
                 </div>
-                
-                <!-- Image Previews (for editing) -->
-                <div id="product-image-previews" class="hidden space-y-2">
-                    <label class="block text-gray-700 font-bold">Current Images</label>
-                    <div id="preview-container" class="grid grid-cols-5 gap-2">
-                        <!-- Previews will be inserted here by JS -->
-                    </div>
-                     <p class="text-xs text-gray-500 mt-1">To replace an image, simply upload a new file in the corresponding slot below.</p>
+                <div class="mt-4">
+                    <label for="product_description" class="block text-sm font-medium text-gray-700">Description</label>
+                    <textarea id="product_description" name="description" rows="6" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold"></textarea>
                 </div>
+            </div>
 
-                <div>
-                    <label class="block text-gray-700 font-bold mb-2">Upload Product Images</label>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input type="file" name="image_url" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-brand-gold file:text-brand-dark hover:file:bg-yellow-300">
-                        <input type="file" name="image_url_2" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-gray-200 file:text-gray-700 hover:file:bg-gray-300">
-                        <input type="file" name="image_url_3" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-gray-200 file:text-gray-700 hover:file:bg-gray-300">
-                        <input type="file" name="image_url_4" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-gray-200 file:text-gray-700 hover:file:bg-gray-300">
-                        <input type="file" name="image_url_5" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-gray-200 file:text-gray-700 hover:file:bg-gray-300">
+            <!-- Step 2: Images -->
+            <div class="form-step hidden" data-step="2">
+                 <h4 class="text-md font-semibold text-gray-800 mb-2">Product Images</h4>
+                 <p class="text-sm text-gray-500 mb-4">Upload a main image and up to four additional gallery images.</p>
+                 <div id="image-previews" class="hidden grid grid-cols-3 sm:grid-cols-5 gap-4 mb-4">
+                    <!-- Image previews will be loaded here -->
+                </div>
+                <div class="space-y-4">
+                    <!-- Main Image -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <label class="block text-sm font-medium text-gray-700">Main Image (Required)</label>
+                        <div class="mt-1 file-input-wrapper">
+                             <span class="file-input-button"><i class="fas fa-upload mr-2"></i>Choose File</span>
+                             <input type="file" name="image_url_1" data-filename-target="#filename-1">
+                             <span id="filename-1" class="file-input-filename">No file chosen</span>
+                        </div>
                     </div>
-                     <p class="text-xs text-gray-500 mt-1">The first image is the main display image.</p>
-                </div>
-                 <div>
-                    <label for="digital_file_url" class="block text-gray-700 font-bold mb-2">Digital File (ZIP)</label>
-                    <input type="file" id="digital_file_url" name="digital_file_url" accept=".zip" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-brand-gold file:text-brand-dark hover:file:bg-yellow-300">
+                    <!-- Additional Images -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <?php for ($i = 2; $i <= 5; $i++): ?>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <label class="block text-sm font-medium text-gray-700">Image <?= $i ?></label>
+                            <div class="mt-1 file-input-wrapper">
+                                 <span class="file-input-button"><i class="fas fa-upload mr-2"></i>Choose File</span>
+                                 <input type="file" name="image_url_<?= $i ?>" data-filename-target="#filename-<?= $i ?>">
+                                 <span id="filename-<?= $i ?>" class="file-input-filename">No file chosen</span>
+                            </div>
+                        </div>
+                        <?php endfor; ?>
+                    </div>
                 </div>
             </div>
-            <div class="flex justify-end space-x-4 mt-6 pt-4 border-t">
-                <button type="button" id="product-cancel-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-full hover:bg-gray-400 transition-colors">Cancel</button>
-                <button type="submit" class="bg-brand-gold text-brand-dark font-bold py-2 px-6 rounded-full hover:bg-yellow-300 transition-colors">Save Product</button>
+            
+            <!-- Step 3: Digital File -->
+            <div class="form-step hidden" data-step="3">
+                <h4 class="text-md font-semibold text-gray-800 mb-2">Downloadable File</h4>
+                <p class="text-sm text-gray-500 mb-4">Upload the final product file that customers will receive after purchase (e.g., ZIP, PNG).</p>
+                 <div class="bg-gray-50 p-6 rounded-lg">
+                    <label class="block text-sm font-medium text-gray-700">Product File</label>
+                     <div class="mt-1 file-input-wrapper">
+                         <span class="file-input-button"><i class="fas fa-file-archive mr-2"></i>Choose Digital File</span>
+                         <input type="file" name="digital_file" data-filename-target="#filename-digital">
+                         <span id="filename-digital" class="file-input-filename">No file chosen</span>
+                    </div>
+                     <p class="text-xs text-gray-500 mt-2">Required for new products. Leave blank when editing to keep the existing file.</p>
+                </div>
             </div>
+            
         </form>
+        
+        <!-- Navigation -->
+        <div class="mt-6 pt-4 border-t flex justify-between items-center">
+            <button type="button" id="prev-step-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 hidden">Previous</button>
+            <div class="flex-grow"></div> <!-- Spacer -->
+            <button type="button" id="next-step-btn" class="px-4 py-2 bg-brand-dark text-white rounded-lg hover:bg-gray-700">Next</button>
+            <button type="submit" form="product-form" id="submit-product-btn" class="px-4 py-2 bg-brand-dark text-white rounded-lg hover:bg-gray-700 hidden">Save Product</button>
+        </div>
     </div>
 </div>
 
 <?php include 'includes/footer.php'; ?>
+

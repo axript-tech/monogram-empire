@@ -1,87 +1,98 @@
-<?php 
-include 'includes/header.php'; 
-include 'includes/db_connect.php';
+<?php
+// This MUST be the very first line of the file.
+include_once 'includes/functions.php';
+include_once 'includes/db_connect.php';
 
-// Fetch categories from the database for the filter sidebar
-$categories_query = "SELECT name FROM categories ORDER BY name ASC";
-$categories_result = $conn->query($categories_query);
+// Fetch categories for the filter sidebar
 $categories = [];
-if ($categories_result->num_rows > 0) {
-    while($row = $categories_result->fetch_assoc()) {
-        $categories[] = $row['name'];
+$category_query = "SELECT id, name FROM categories ORDER BY name ASC";
+$category_result = $conn->query($category_query);
+if ($category_result) {
+    while ($row = $category_result->fetch_assoc()) {
+        $categories[] = $row;
     }
 }
-$conn->close();
+
+include 'includes/header.php';
 ?>
 
+<!-- Off-Canvas Filter Menu for Mobile -->
+<div id="filter-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden"></div>
+<aside id="filter-sidebar" class="fixed top-0 left-0 w-80 h-full bg-white shadow-xl z-50 transform -translate-x-full transition-transform duration-300 ease-in-out lg:hidden">
+    <div class="p-6 h-full flex flex-col">
+        <div class="flex justify-between items-center border-b pb-4 mb-4">
+            <h3 class="text-xl font-bold text-brand-dark">Filters</h3>
+            <button id="close-filter-btn" class="text-gray-500 hover:text-brand-dark">
+                <i class="fas fa-times fa-lg"></i>
+            </button>
+        </div>
+        <div class="overflow-y-auto flex-grow">
+            <?php include 'includes/shop_filters.php'; ?>
+        </div>
+    </div>
+</aside>
+
 <!-- Page Header -->
-<div class="relative bg-brand-dark text-white py-20">
-    <div class="absolute inset-0 bg-cover bg-center opacity-30" style="background-image: url('assets/images/hero-bg.jpg');"></div>
-    <div class="relative container mx-auto px-6 text-center">
-        <h1 class="text-4xl md:text-5xl font-bold" style="font-family: 'Playfair Display', serif;">Our Designs</h1>
-        <p class="text-lg text-gray-300 mt-2">Explore our curated collection of exquisite monogram templates.</p>
+<div class="bg-gray-100 py-16">
+    <div class="container mx-auto px-6 text-center">
+        <h1 class="text-4xl font-bold text-brand-dark">Our Collection</h1>
+        <p class="text-gray-600 mt-2">Discover our curated selection of exquisite monogram designs.</p>
     </div>
 </div>
 
-<!-- Shop Section -->
-<section class="py-16 bg-white">
-    <div class="container mx-auto px-6">
-        <div class="flex flex-col md:flex-row gap-8">
+<!-- Main Content -->
+<div class="container mx-auto px-6 py-16">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-12">
+        <!-- Sidebar for Desktop -->
+        <aside class="col-span-1 hidden lg:block">
+            <?php include 'includes/shop_filters.php'; ?>
+        </aside>
 
-            <!-- Filters Sidebar -->
-            <aside class="w-full md:w-1/4 lg:w-1/5">
-                <div class="p-6 bg-brand-light-gray rounded-lg shadow-sm sticky top-24">
-                    <h2 class="text-xl font-bold text-brand-dark mb-6">Filters</h2>
-
-                    <!-- Category Filter -->
-                    <div class="mb-6">
-                        <h3 class="font-semibold text-brand-dark mb-3">Categories</h3>
-                        <ul class="space-y-2 text-gray-600">
-                            <li><a href="#" class="filter-category font-bold text-brand-gold" data-category="All">All</a></li>
-                            <?php foreach ($categories as $category): ?>
-                                <li><a href="#" class="filter-category hover:text-brand-gold" data-category="<?php echo htmlspecialchars($category); ?>"><?php echo htmlspecialchars($category); ?></a></li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-
-                    <!-- Price Range Filter -->
-                    <div>
-                        <h3 class="font-semibold text-brand-dark mb-4">Price Range</h3>
-                        <input type="range" id="price-range-slider" min="5000" max="50000" value="50000" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                        <div class="flex justify-between text-sm text-gray-500 mt-2">
-                            <span>&#8358;5k</span>
-                            <span id="price-range-value">&#8358;50k</span>
-                        </div>
-                    </div>
+        <!-- Product Grid -->
+        <main class="col-span-1 lg:col-span-3">
+            <!-- Sorting and Results Count -->
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+                <div class="w-full flex items-center space-x-4">
+                     <!-- Filter Button for Mobile -->
+                    <button id="open-filter-btn" class="lg:hidden bg-white border border-gray-300 px-4 py-2 rounded-md flex items-center">
+                        <i class="fas fa-filter mr-2"></i> Filters
+                    </button>
+                    <p id="results-count" class="text-sm text-gray-500">Showing results...</p>
                 </div>
-            </aside>
+                <select id="sort-by-select" class="w-full md:w-auto mt-4 md:mt-0 px-4 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-gold">
+                    <option value="default">Default Sorting</option>
+                    <option value="price_asc">Price: Low to High</option>
+                    <option value="price_desc">Price: High to Low</option>
+                    <option value="name_asc">Name: A to Z</option>
+                    <option value="name_desc">Name: Z to A</option>
+                </select>
+            </div>
 
             <!-- Products Grid -->
-            <main class="w-full md:w-3/4 lg:w-4/5">
-                <!-- Sorting and View Options -->
-                <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                    <p id="results-count" class="text-gray-600">Loading products...</p>
-                    <select id="sort-by-select" class="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-brand-gold">
-                        <option value="default">Default sorting</option>
-                        <option value="price_asc">Sort by price: low to high</option>
-                        <option value="price_desc">Sort by price: high to low</option>
-                        <option value="latest">Sort by latest</option>
-                    </select>
-                </div>
-
-                <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <!-- Products will be loaded here by JavaScript -->
-                </div>
-
-                <!-- Pagination -->
-                <div id="pagination-container" class="mt-12 flex justify-center">
-                    <!-- Pagination links will be loaded here if implemented -->
-                </div>
-            </main>
-        </div>
+            <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
+                <!-- Products will be loaded here by JavaScript -->
+                <p class="col-span-full text-center text-gray-500">Loading products...</p>
+            </div>
+            
+            <!-- Pagination -->
+            <div id="pagination-container" class="mt-12 flex justify-center">
+                <!-- Pagination links will be loaded here by JavaScript -->
+            </div>
+        </main>
     </div>
-</section>
+</div>
 
-<!-- IMPORTANT: Include the page-specific JavaScript file -->
+<?php 
+// To keep the code clean, I've moved the filters to a separate include file.
+// This new file is included in both the desktop sidebar and the mobile off-canvas menu.
+if (!file_exists('includes/shop_filters.php')) {
+    file_put_contents('includes/shop_filters.php', '<?php // This file contains the HTML for the shop filters ?>');
+}
+// The content for the filter file will be provided in a separate update.
 
-<?php include 'includes/footer.php'; ?>
+// The footer contains the main jQuery include
+include 'includes/footer.php'; 
+?>
+<!-- Page-specific JavaScript must be loaded AFTER the footer -->
+<script src="assets/js/shop.js"></script>
+

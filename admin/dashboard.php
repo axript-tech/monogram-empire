@@ -1,4 +1,7 @@
-<?php include 'includes/header.php'; ?>
+<?php 
+include 'includes/auth_check.php';
+include 'includes/header.php'; 
+?>
 
 <!-- Page Title -->
 <h2 class="text-3xl font-bold text-brand-dark mb-6">Admin Dashboard</h2>
@@ -9,7 +12,7 @@
     <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
         <div>
             <p class="text-sm text-gray-500">Total Revenue</p>
-            <p id="stat-total-revenue" class="text-3xl font-bold text-brand-dark">&#8358;0</p>
+            <p id="stat-total-revenue" class="text-3xl font-bold text-brand-dark">...</p>
         </div>
         <div class="text-4xl text-brand-gold opacity-50">
             <i class="fas fa-dollar-sign"></i>
@@ -19,7 +22,7 @@
     <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
         <div>
             <p class="text-sm text-gray-500">Total Orders</p>
-            <p id="stat-total-orders" class="text-3xl font-bold text-brand-dark">0</p>
+            <p id="stat-total-orders" class="text-3xl font-bold text-brand-dark">...</p>
         </div>
         <div class="text-4xl text-brand-gold opacity-50">
             <i class="fas fa-shopping-cart"></i>
@@ -29,7 +32,7 @@
     <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
         <div>
             <p class="text-sm text-gray-500">Total Users</p>
-            <p id="stat-total-users" class="text-3xl font-bold text-brand-dark">0</p>
+            <p id="stat-total-users" class="text-3xl font-bold text-brand-dark">...</p>
         </div>
         <div class="text-4xl text-brand-gold opacity-50">
             <i class="fas fa-users"></i>
@@ -39,7 +42,7 @@
     <div class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between">
         <div>
             <p class="text-sm text-gray-500">Pending Requests</p>
-            <p id="stat-pending-requests" class="text-3xl font-bold text-brand-dark">0</p>
+            <p id="stat-pending-requests" class="text-3xl font-bold text-brand-dark">...</p>
         </div>
         <div class="text-4xl text-brand-gold opacity-50">
             <i class="fas fa-concierge-bell"></i>
@@ -54,14 +57,14 @@
         <table class="min-w-full text-left">
             <thead>
                 <tr class="border-b">
-                    <th class="py-2 px-4">User</th>
+                    <th class="py-2 px-4">Admin</th>
                     <th class="py-2 px-4">Action</th>
                     <th class="py-2 px-4">Details</th>
                     <th class="py-2 px-4">Date</th>
                 </tr>
             </thead>
-            <tbody class="text-gray-600 text-sm">
-                <!-- Activity will be loaded here dynamically in a future step -->
+            <tbody id="recent-activity-body" class="text-gray-600 text-sm">
+                <!-- Activity will be loaded here dynamically -->
                 <tr>
                     <td colspan="4" class="text-center py-4">Loading recent activity...</td>
                 </tr>
@@ -71,3 +74,4 @@
 </div>
 
 <?php include 'includes/footer.php'; ?>
+

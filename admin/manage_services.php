@@ -1,76 +1,111 @@
-<?php include 'includes/header.php'; ?>
+<?php 
+include 'includes/auth_check.php';
+include 'includes/header.php'; 
+?>
 
 <!-- Page Title -->
-<h2 class="text-3xl font-bold text-brand-dark mb-6">Service Request Management</h2>
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-3xl font-bold text-brand-dark">Service Request Management</h2>
+</div>
 
-<!-- Service Request Management Table -->
+<!-- Service Requests Table -->
 <div class="bg-white p-6 rounded-lg shadow-md">
-    <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-bold text-brand-dark">All Custom Requests</h3>
-    </div>
     <div class="overflow-x-auto">
         <table class="min-w-full text-left">
-            <thead class="bg-brand-light-gray">
-                <tr>
-                    <th class="py-3 px-4 font-semibold">Tracking ID</th>
-                    <th class="py-3 px-4 font-semibold">Customer</th>
-                    <th class="py-3 px-4 font-semibold">Request Date</th>
-                    <th class="py-3 px-4 font-semibold">Status</th>
-                    <th class="py-3 px-4 font-semibold">Quote</th>
-                    <th class="py-3 px-4 font-semibold">Actions</th>
+            <thead>
+                <tr class="border-b">
+                    <th class="py-2 px-4">Tracking ID</th>
+                    <th class="py-2 px-4">Customer</th>
+                    <th class="py-2 px-4">Date</th>
+                    <th class="py-2 px-4">Status</th>
+                    <th class="py-2 px-4">Quote</th>
+                    <th class="py-2 px-4">Actions</th>
                 </tr>
             </thead>
             <tbody id="services-table-body" class="text-gray-600 text-sm">
-                <!-- Service request data will be loaded here by JavaScript -->
+                <!-- Service request rows will be loaded here by JavaScript -->
                 <tr>
-                    <td colspan="6" class="text-center py-12">
-                        <i class="fas fa-spinner fa-spin text-4xl text-gray-300"></i>
-                        <p class="mt-2 text-gray-500">Loading requests...</p>
-                    </td>
+                    <td colspan="6" class="text-center py-8 text-gray-500">Loading service requests...</td>
                 </tr>
             </tbody>
         </table>
     </div>
-    <!-- Pagination -->
-    <div id="pagination-container" class="mt-6 flex justify-end"></div>
+    <!-- Pagination Container -->
+    <div id="pagination-container" class="mt-6 flex justify-center">
+        <!-- Pagination links will be loaded here -->
+    </div>
 </div>
 
-<!-- View/Edit Service Request Modal -->
-<div id="service-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-    <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-2xl">
-        <h2 id="service-modal-title" class="text-2xl font-bold text-brand-dark mb-6">Service Request Details</h2>
+<!-- Service Request Modal (for View/Edit) -->
+<div id="service-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
+        <button class="close-modal-btn absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+            <i class="fas fa-times fa-lg"></i>
+        </button>
+        <h3 class="text-2xl font-bold text-brand-dark mb-6">Service Request Details</h3>
+        
         <form id="service-form">
-            <input type="hidden" id="request_id" name="request_id">
+            <input type="hidden" id="service_id" name="id">
+
+            <!-- Customer Request Details (Read-only) -->
+            <div class="mb-6 p-4 border rounded-lg bg-gray-50">
+                <h4 class="text-lg font-semibold text-gray-800 mb-4">Customer Request</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <label class="block text-gray-500">Customer Name</label>
+                        <input type="text" id="service_customer_name" readonly class="mt-1 block w-full bg-gray-200 border-gray-300 rounded-md shadow-sm">
+                    </div>
+                     <div>
+                        <label class="block text-gray-500">Customer Email</label>
+                        <input type="text" id="service_customer_email" readonly class="mt-1 block w-full bg-gray-200 border-gray-300 rounded-md shadow-sm">
+                    </div>
+                     <div class="col-span-full">
+                        <label class="block text-gray-500">Monogram Text</label>
+                        <input type="text" id="service_monogram_text" readonly class="mt-1 block w-full bg-gray-200 border-gray-300 rounded-md shadow-sm">
+                    </div>
+                     <div class="col-span-full">
+                        <label class="block text-gray-500">Description & Details</label>
+                        <textarea id="service_details" readonly rows="4" class="mt-1 block w-full bg-gray-200 border-gray-300 rounded-md shadow-sm"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-gray-500">Inspiration File</label>
+                        <a href="#" id="service_reference_link" target="_blank" class="mt-1 text-blue-500 hover:underline">View Attached File</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Actions (Editable) -->
+            <div class="p-4 border rounded-lg">
+                 <h4 class="text-lg font-semibold text-gray-800 mb-4">Admin Actions</h4>
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="service_status" class="block text-sm font-medium text-gray-700">Request Status</label>
+                        <select id="service_status" name="status" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold">
+                            <option value="pending">Pending</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="service_quote" class="block text-sm font-medium text-gray-700">Quote Amount (₦)</label>
+                        <input type="number" id="service_quote" name="quote_amount" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold">
+                    </div>
+                 </div>
+                 <div id="converted-product-id-wrapper" class="mt-4 hidden">
+                     <label for="converted_product_id" class="block text-sm font-medium text-gray-700">Converted Product ID</label>
+                     <input type="number" id="converted_product_id" name="converted_product_id" placeholder="Enter ID of the new product" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold">
+                     <p class="text-xs text-gray-500 mt-1">Required when status is 'Completed'. Links this request to the final product.</p>
+                 </div>
+            </div>
             
-            <div class="mb-4 bg-gray-100 p-4 rounded-md">
-                <h4 class="font-bold text-gray-700">Request Details:</h4>
-                <p id="service-details" class="text-sm text-gray-600 whitespace-pre-wrap max-h-48 overflow-y-auto"></p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="mb-4">
-                    <label for="status" class="block text-gray-700 font-bold mb-2">Status</label>
-                    <select id="status" name="status" required class="w-full px-4 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-gold">
-                        <option value="pending">Pending</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="awaiting_payment">Awaiting Payment</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label for="quote_price" class="block text-gray-700 font-bold mb-2">Quote Price (&#8358;)</label>
-                    <input type="number" id="quote_price" name="quote_price" step="0.01" placeholder="e.g., 50000" class="w-full px-4 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-gold">
-                </div>
-            </div>
-
-            <div class="flex justify-end space-x-4 mt-6">
-                <button type="button" id="service-cancel-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-full hover:bg-gray-400 transition-colors">Close</button>
-                <button type="submit" class="bg-brand-gold text-brand-dark font-bold py-2 px-6 rounded-full hover:bg-yellow-300 transition-colors">Update Request</button>
+            <div class="mt-6 flex justify-end space-x-4">
+                <button type="button" class="close-modal-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-brand-dark text-white rounded-lg hover:bg-gray-700">Update Request</button>
             </div>
         </form>
     </div>
 </div>
 
-
 <?php include 'includes/footer.php'; ?>
+
