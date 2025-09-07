@@ -10,7 +10,14 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 // --- Handle GET requests (Fetch Products) ---
 if ($method === 'GET') {
-    if (isset($_GET['id']) && is_numeric($_GET['id'])) {
+    if (isset($_GET['list']) && $_GET['list'] === 'all') {
+        // Fetch a simple list of all products for dropdowns
+        $query = "SELECT id, name, sku FROM products ORDER BY name ASC";
+        $result = $conn->query($query);
+        $products = $result->fetch_all(MYSQLI_ASSOC);
+        send_json_response(['success' => true, 'products' => $products]);
+
+    } elseif (isset($_GET['id']) && is_numeric($_GET['id'])) {
         // Fetch a single product
         $product_id = (int)$_GET['id'];
         $stmt = $conn->prepare("SELECT * FROM products WHERE id = ?");
@@ -54,13 +61,11 @@ if ($method === 'GET') {
 if ($method === 'POST') {
     $product_id = isset($_POST['id']) && !empty($_POST['id']) ? (int)$_POST['id'] : null;
     $name = sanitize_input($_POST['name'] ?? '');
-    // FIX: Default to an empty string instead of null to prevent trim() warning.
     $sku = sanitize_input($_POST['sku'] ?? ''); 
     $category_id = (int)($_POST['category_id'] ?? 0);
     $price = (float)($_POST['price'] ?? 0);
     $description = sanitize_input($_POST['description'] ?? '');
 
-    // Validation
     if (empty($name) || $category_id === 0 || $price <= 0) {
         send_json_response(['success' => false, 'message' => 'Name, category, and price are required.'], 400);
     }
@@ -127,7 +132,6 @@ if ($method === 'POST') {
     }
 
     if ($is_update) {
-        // --- Update Existing Product ---
         $stmt = $conn->prepare("UPDATE products SET name=?, sku=?, description=?, price=?, category_id=?, image_url=?, image_url_2=?, image_url_3=?, image_url_4=?, image_url_5=?, digital_file_url=? WHERE id=?");
         $stmt->bind_param("sssdissssssi", $name, $sku, $description, $price, $category_id, $image_paths[0], $image_paths[1], $image_paths[2], $image_paths[3], $image_paths[4], $digital_file_path, $product_id);
         if ($stmt->execute()) {
@@ -137,9 +141,7 @@ if ($method === 'POST') {
             send_json_response(['success' => false, 'message' => 'Database error during update.'], 500);
         }
     } else {
-        // --- Create New Product ---
         if (empty($sku)) {
-            // Auto-generate SKU if it's empty
             $cat_stmt = $conn->prepare("SELECT name FROM categories WHERE id = ?");
             $cat_stmt->bind_param("i", $category_id);
             $cat_stmt->execute();
@@ -148,7 +150,7 @@ if ($method === 'POST') {
                 $cat_prefix = strtoupper(substr($cat_row['name'], 0, 3));
                 $sku = $cat_prefix . '-' . rand(1000, 9999);
             } else {
-                $sku = 'GEN-' . rand(1000, 9999); // Fallback
+                $sku = 'GEN-' . rand(1000, 9999);
             }
             $cat_stmt->close();
         }

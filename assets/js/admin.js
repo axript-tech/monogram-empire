@@ -55,7 +55,6 @@ $(document).ready(function() {
         const form = modal.find('form');
         if (form.length) {
             form[0].reset();
-            // Reset file input text
             $('.file-input-filename').text('No file chosen');
         }
         modal.find('input[name="id"]').val('');
@@ -288,6 +287,45 @@ $(document).ready(function() {
         });
     }
 
+    function loadCategories(page = 1) {
+        const tableBody = $('#categories-table-body');
+        if (!tableBody.length) return;
+        tableBody.html('<tr><td colspan="3" class="text-center py-8">Loading...</td></tr>');
+        $.getJSON(`api/categories.php?page=${page}`, function(response) {
+            tableBody.empty();
+            if (response.success && response.categories.length > 0) {
+                response.categories.forEach(cat => {
+                    tableBody.append(`
+                        <tr class="border-b">
+                            <td class="py-3 px-4">${cat.id}</td>
+                            <td class="py-3 px-4">${cat.name}</td>
+                            <td class="py-3 px-4"><button class="edit-btn text-blue-500" data-id="${cat.id}" data-type="category">Edit</button> <button class="delete-btn text-red-500" data-id="${cat.id}" data-type="category">Delete</button></td>
+                        </tr>
+                    `);
+                });
+                renderAdminPagination(response.pagination, 'categories');
+            } else {
+                tableBody.html('<tr><td colspan="3" class="text-center py-8">No categories found.</td></tr>');
+            }
+        }).fail(function() {
+            tableBody.html('<tr><td colspan="3" class="text-center py-8 text-red-500">Failed to load categories.</td></tr>');
+        });
+    }
+
+    function loadAllProductsForSelect() {
+        const productDatalist = $('#product-datalist');
+        if (!productDatalist.length) return;
+
+        $.getJSON('api/products.php?list=all', function(response) {
+            if (response.success && response.products) {
+                productDatalist.empty();
+                response.products.forEach(product => {
+                    productDatalist.append(`<option value="${product.id}">${product.name} (SKU: ${product.sku || 'N/A'})</option>`);
+                });
+            }
+        });
+    }
+
     function loadServices(page = 1) {
         const tableBody = $('#services-table-body');
         if (!tableBody.length) return;
@@ -509,10 +547,71 @@ $(document).ready(function() {
     });
 
     // =================================================================
-    // 7. SERVICE REQUEST MANAGEMENT (CRUD)
+    // 7. CATEGORY MANAGEMENT (CRUD)
+    // =================================================================
+    const categoryModal = $('#category-modal');
+
+    $('#add-category-btn').on('click', function() {
+        $('#category-modal-title').text('Add New Category');
+        categoryModal.find('form')[0].reset();
+        categoryModal.find('input[name="id"]').val('');
+        showModal(categoryModal);
+    });
+
+    $('#category-form').on('submit', function(e) {
+        e.preventDefault();
+        const submitBtn = $(this).find('button[type="submit"]');
+        const originalBtnText = submitBtn.text();
+        submitBtn.prop('disabled', true).text('Saving...');
+
+        const id = $('#category_id').val();
+        const method = id ? 'PUT' : 'POST';
+        const url = `api/categories.php${id ? `?id=${id}` : ''}`;
+        
+        const formData = {
+            id: id,
+            name: $('#category_name').val()
+        };
+
+        $.ajax({
+            url: url,
+            method: method,
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    hideModal(categoryModal);
+                    showToast(response.message, true);
+                    loadCategories();
+                } else {
+                    showToast(response.message, false);
+                }
+            },
+            error: function() {
+                showToast('An unexpected error occurred.', false);
+            },
+            complete: function() {
+                submitBtn.prop('disabled', false).text(originalBtnText);
+            }
+        });
+    });
+
+
+    // =================================================================
+    // 8. SERVICE REQUEST MANAGEMENT (CRUD)
     // =================================================================
 
     const serviceModal = $('#service-modal');
+
+    // Show/hide the 'Converted Product ID' field based on status
+    $('#service_status').on('change', function() {
+        if ($(this).val() === 'completed') {
+            $('#converted-product-id-wrapper').slideDown();
+        } else {
+            $('#converted-product-id-wrapper').slideUp();
+        }
+    });
 
     $('#service-form').on('submit', function(e) {
         e.preventDefault();
@@ -543,8 +642,13 @@ $(document).ready(function() {
                     showToast(response.message, false);
                 }
             },
-            error: function() {
-                showToast('An error occurred while updating the request.', false);
+            error: function(jqXHR) {
+                const response = jqXHR.responseJSON;
+                 if (response && response.message) {
+                    showToast(response.message, false);
+                 } else {
+                    showToast('An error occurred while updating the request.', false);
+                 }
             },
             complete: function() {
                 submitBtn.prop('disabled', false).text(originalBtnText);
@@ -552,32 +656,9 @@ $(document).ready(function() {
         });
     });
     
-    $('#convert-to-product-btn').on('click', function() {
-        const id = $('#service_id').val();
-         showConfirmation('Are you sure you want to complete this request and convert it to a product?', function() {
-            $.ajax({
-                url: `api/services.php?action=convert&id=${id}`,
-                method: 'POST',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        hideModal(serviceModal);
-                        showToast(response.message, true);
-                        loadServices();
-                        loadProducts();
-                    } else {
-                        showToast(response.message, false);
-                    }
-                },
-                error: function() {
-                    showToast('An error occurred during conversion.', false);
-                }
-            });
-        });
-    });
 
     // =================================================================
-    // 8. ORDER MANAGEMENT
+    // 9. ORDER MANAGEMENT
     // =================================================================
 
     const orderModal = $('#order-modal');
@@ -619,7 +700,7 @@ $(document).ready(function() {
     });
 
     // =================================================================
-    // 9. SETTINGS MANAGEMENT
+    // 10. SETTINGS MANAGEMENT
     // =================================================================
      $('#settings-form').on('submit', function(e) {
         e.preventDefault();
@@ -631,7 +712,12 @@ $(document).ready(function() {
             site_name: $('#site_name').val(),
             site_email: $('#site_email').val(),
             paystack_public_key: $('#paystack_public_key').val(),
-            paystack_secret_key: $('#paystack_secret_key').val()
+            paystack_secret_key: $('#paystack_secret_key').val(),
+            smtp_host: $('#smtp_host').val(),
+            smtp_username: $('#smtp_username').val(),
+            smtp_password: $('#smtp_password').val(),
+            smtp_port: $('#smtp_port').val(),
+            smtp_secure: $('#smtp_secure').val()
         };
 
         $.ajax({
@@ -657,7 +743,7 @@ $(document).ready(function() {
     });
 
     // =================================================================
-    // 10. EVENT DELEGATION FOR DYNAMIC CONTENT
+    // 11. EVENT DELEGATION FOR DYNAMIC CONTENT
     // =================================================================
     const mainContent = $('#admin-main-content');
 
@@ -710,6 +796,16 @@ $(document).ready(function() {
                     $('#product-form-content').show();
                 }
             });
+        } else if (type === 'category') {
+             $.get(`api/categories.php?id=${id}`, function(response) {
+                if (response.success) {
+                    const cat = response.category;
+                    $('#category-modal-title').text('Edit Category');
+                    $('#category_id').val(cat.id);
+                    $('#category_name').val(cat.name);
+                    showModal(categoryModal);
+                }
+            });
         }
     });
 
@@ -727,6 +823,9 @@ $(document).ready(function() {
         } else if (type === 'service') {
             url = `api/services.php?id=${id}`;
             callback = loadServices;
+        } else if (type === 'category') {
+            url = `api/categories.php?id=${id}`;
+            callback = loadCategories;
         }
 
         showConfirmation('Are you sure you want to delete this item?', function() {
@@ -765,7 +864,7 @@ $(document).ready(function() {
                     } else {
                         $('#service_reference_link').hide();
                     }
-                    $('#service_status').val(service.status);
+                    $('#service_status').val(service.status).trigger('change'); // Trigger change to show/hide product ID field
                     $('#service_quote').val(service.quote_amount);
                     $('#converted_product_id').val(service.converted_product_id);
                     showModal(serviceModal);
@@ -806,10 +905,11 @@ $(document).ready(function() {
         else if (type === 'orders') loadOrders(page);
         else if (type === 'payments') loadPayments(page);
         else if (type === 'activity_log') loadActivityLog(page);
+        else if (type === 'categories') loadCategories(page);
     });
 
     // =================================================================
-    // 11. INITIAL LOAD (Conditional)
+    // 12. INITIAL LOAD (Conditional)
     // =================================================================
     const currentPath = window.location.pathname;
 
@@ -820,8 +920,11 @@ $(document).ready(function() {
         loadUsers();
     } else if (currentPath.endsWith('manage_products.php')) {
         loadProducts();
+    } else if (currentPath.endsWith('manage_categories.php')) {
+        loadCategories();
     } else if (currentPath.endsWith('manage_services.php')) {
         loadServices();
+        loadAllProductsForSelect();
     } else if (currentPath.endsWith('manage_orders.php')) {
         loadOrders();
     } else if (currentPath.endsWith('manage_payments.php')) {

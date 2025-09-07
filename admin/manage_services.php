@@ -93,8 +93,11 @@ include 'includes/header.php';
                     </div>
                  </div>
                  <div id="converted-product-id-wrapper" class="mt-4 hidden">
-                     <label for="converted_product_id" class="block text-sm font-medium text-gray-700">Converted Product ID</label>
-                     <input type="number" id="converted_product_id" name="converted_product_id" placeholder="Enter ID of the new product" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold">
+                     <label for="converted_product_id" class="block text-sm font-medium text-gray-700">Link to Final Product</label>
+                     <input type="text" id="converted_product_id" name="converted_product_id" list="product-datalist" placeholder="Type or select a product by ID/Name" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold">
+                     <datalist id="product-datalist">
+                        <!-- Options will be populated by JavaScript -->
+                     </datalist>
                      <p class="text-xs text-gray-500 mt-1">Required when status is 'Completed'. Links this request to the final product.</p>
                  </div>
             </div>
