@@ -134,8 +134,10 @@ $(document).ready(function() {
     });
 
     // Price range slider
+    const priceSlider = $('#price-range-slider');
+    const priceValue = $('#price-range-value');
     $(document).on('input', '#price-range-slider', function() {
-        $('#price-range-value').text(`₦${parseInt($(this).val()).toLocaleString()}`);
+        priceValue.text(`₦${parseInt($(this).val()).toLocaleString()}`);
     });
     $(document).on('change', '#price-range-slider', function() {
         currentFilters.maxPrice = $(this).val();
@@ -172,8 +174,8 @@ $(document).ready(function() {
         $('#search-input').val('');
         $('.filter-category').removeClass('font-bold text-brand-gold');
         $('.filter-category[data-category="All"]').addClass('font-bold text-brand-gold');
-        $('#price-range-slider').val(50000);
-        $('#price-range-value').text('₦50,000');
+        priceSlider.val(50000);
+        priceValue.text('₦50,000');
         $('#sort-by-select').val('default');
         
         applyFilters();

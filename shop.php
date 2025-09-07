@@ -33,10 +33,10 @@ include 'includes/header.php';
 </aside>
 
 <!-- Page Header -->
-<div class="bg-gray-100 py-16">
+<div class="relative bg-brand-dark text-white py-16">
     <div class="container mx-auto px-6 text-center">
-        <h1 class="text-4xl font-bold text-brand-dark">Our Collection</h1>
-        <p class="text-gray-600 mt-2">Discover our curated selection of exquisite monogram designs.</p>
+        <h1 class="text-4xl font-bold text-white">Our Collection</h1>
+        <p class="text-white mt-2">Discover our curated selection of exquisite monogram designs.</p>
     </div>
 </div>
 

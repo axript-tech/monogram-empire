@@ -13,11 +13,12 @@ if (strpos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') !== false) {
 }
 
 // --- Filter & Pagination Setup ---
-// Get all filter parameters from the received data, with safe defaults.
-$search_term = sanitize_input($data['searchTerm'] ?? '');
-$category = sanitize_input($data['category'] ?? 'All');
+// We use trim() here but avoid aggressive sanitization for values going into the DB query.
+// Prepared statements will handle the security against SQL injection.
+$search_term = trim($data['searchTerm'] ?? '');
+$category = trim($data['category'] ?? 'All');
 $max_price = (float)($data['maxPrice'] ?? 50000);
-$sort_by = sanitize_input($data['sortBy'] ?? 'default');
+$sort_by = trim($data['sortBy'] ?? 'default');
 $page = (int)($data['page'] ?? 1);
 $limit = (int)($data['limit'] ?? 8); 
 $offset = ($page - 1) * $limit;
@@ -31,14 +32,15 @@ $types = "";
 
 // Add search term condition if provided
 if (!empty($search_term)) {
-    $where_conditions[] = "p.name LIKE ?";
+    $where_conditions[] = "LOWER(p.name) LIKE LOWER(?)";
     $params[] = "%" . $search_term . "%";
     $types .= "s";
 }
 
 // Add category condition only if a specific category is selected
+// This is now case-insensitive to prevent data mismatch errors.
 if ($category !== 'All' && $category !== 'Featured') {
-    $where_conditions[] = "c.name = ?";
+    $where_conditions[] = "LOWER(c.name) = LOWER(?)";
     $params[] = $category;
     $types .= "s";
 }
@@ -93,6 +95,7 @@ $final_params[] = $offset;
 
 $stmt = $conn->prepare($final_sql);
 if (!empty($final_params)) {
+    // Using a more compatible method for binding a dynamic number of parameters
     $stmt->bind_param($final_types, ...$final_params);
 }
 $stmt->execute();

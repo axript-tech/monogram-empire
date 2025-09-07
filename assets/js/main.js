@@ -137,44 +137,64 @@ $(document).ready(function() {
         });
     }
     
+   // --- Dynamic Collection Tabs ---
     $('.collection-tab').on('click', function(e) {
         e.preventDefault();
-        $('.collection-tab').removeClass('bg-brand-dark text-white').addClass('bg-white text-brand-dark');
-        $(this).addClass('bg-brand-dark text-white');
+        
+        // Update button styles
+        $('.collection-tab').removeClass('bg-brand-dark text-white').addClass('bg-white text-brand-dark shadow-sm');
+        $(this).removeClass('bg-white text-brand-dark shadow-sm').addClass('bg-brand-dark text-white');
 
         const category = $(this).data('category');
         const productGrid = $('#collection-grid');
-        productGrid.html('<p class="col-span-full text-center text-gray-500">Loading...</p>');
+        productGrid.html('<p class="col-span-full text-center text-gray-500 py-10">Loading designs...</p>');
         
-        const filterData = { category: category, limit: 4 };
+        const filterData = {
+            category: category,
+            limit: 20 // Fetch up to 20 products for this section
+        };
+
+        // The "Featured" tab will show the latest products
         if (category === 'Featured') {
             filterData.sortBy = 'latest';
-            delete filterData.category; 
         }
 
         $.ajax({
             url: `api/shop/filter.php`,
             method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(filterData),
+            // FIX: Send data as standard form data instead of JSON
+            data: filterData, 
             dataType: 'json',
             success: function(response) {
                 productGrid.empty();
                 if (response.success && response.products.length > 0) {
                      response.products.forEach(product => {
-                        productGrid.append(`
-                            <div class="bg-white rounded-lg shadow-md overflow-hidden group">
-                                <div class="relative"><img src="${product.image_url}" alt="${product.name}" class="w-full h-64 object-cover"><div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><a href="product-details.php?id=${product.id}" class="text-white border-2 border-brand-gold bg-brand-gold bg-opacity-50 py-2 px-6 rounded-full hover:bg-opacity-100 transition-all">View Details</a></div></div>
-                                <div class="p-4 text-center"><h3 class="text-lg font-semibold text-brand-dark">${product.name}</h3><p class="text-brand-gray">&#8358;${parseFloat(product.price).toLocaleString()}</p></div>
-                            </div>`);
+                        const productCard = `
+                            <div class="bg-white rounded-lg shadow-md overflow-hidden group transition-transform transform hover:-translate-y-1">
+                                <a href="product-details.php?id=${product.id}" class="block">
+                                    <div class="relative">
+                                        <img src="${product.image_url}" alt="${product.name}" class="w-full h-56 object-cover">
+                                    </div>
+                                    <div class="p-4 text-center">
+                                        <h3 class="text-md font-semibold text-brand-dark truncate">${product.name}</h3>
+                                        <p class="text-brand-gray text-lg font-bold mt-1">&#8358;${parseFloat(product.price).toLocaleString()}</p>
+                                    </div>
+                                </a>
+                            </div>
+                        `;
+                        productGrid.append(productCard);
                     });
                 } else {
-                    productGrid.html(`<p class="col-span-full text-center text-gray-500">No products found.</p>`);
+                    productGrid.html(`<p class="col-span-full text-center text-gray-500 py-10">No products found in the '${category}' collection yet.</p>`);
                 }
+            },
+             error: function() {
+                productGrid.html('<p class="col-span-full text-center text-red-500 py-10">Could not load products.</p>');
             }
         });
     });
 
+    // Trigger click on the first tab on page load
     if ($('.collection-tab').length) {
         $('.collection-tab').first().trigger('click');
     }

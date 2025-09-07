@@ -74,15 +74,25 @@
             </div>
         </div>
     </footer>
+      <!-- Floating WhatsApp Button -->
+    <a href="https://wa.me/2348101583986" target="_blank" rel="noopener noreferrer" class="fixed bottom-8 right-8 bg-green-500 text-white w-16 h-16 rounded-full flex items-center justify-center shadow-lg hover:bg-green-600 transition-transform transform hover:scale-110 z-50">
+        <i class="fab fa-whatsapp fa-2x"></i>
+    </a>
 
+    <!-- Back to Top Button -->
+    <a href="#" id="back-to-top" class="fixed bottom-8 left-8 bg-brand-dark text-brand-gold w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:bg-gray-700 transition-all z-50 hidden p-4">
+        <i class="fas fa-arrow-up"></i>
+    </a>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Custom JS -->
     <script src="assets/js/main.js"></script>
+<script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+
     <script src="assets/js/shop.js"></script>
     <script src="assets/js/cart.js"></script>
     <script src="assets/js/auth.js"></script>
-    <script src="assets/js/index.js"></script>
+  
 
 </body>
 </html>
