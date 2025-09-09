@@ -54,7 +54,7 @@ send_json_response([
     'reference' => 'ME_' . $order_id . '_' . time(),
     'orderId' => $order_id,
     'userId' => $user_id // Add the user ID to the response
-]);
+, 201]);
 
 $conn->close();
 

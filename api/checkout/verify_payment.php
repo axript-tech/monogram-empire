@@ -32,7 +32,7 @@ curl_setopt_array($curl, array(
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_HTTPHEADER => ["authorization: Bearer " . $paystack_secret_key, "cache-control: no-cache"],
     CURLOPT_SSL_VERIFYPEER => false,
-));
+)); 
 $response = curl_exec($curl);
 $err = curl_error($curl);
 curl_close($curl);

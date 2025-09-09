@@ -6,11 +6,6 @@ $(document).ready(function() {
     const toastContainer = $('#toast-container');
     const confirmationModal = $('#confirmation-modal');
 
-    /**
-     * Shows a toast notification.
-     * @param {string} message - The message to display.
-     * @param {boolean} isSuccess - True for success, false for error.
-     */
     function showToast(message, isSuccess = true) {
         const icon = isSuccess ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-exclamation-circle"></i>';
         const bgColor = isSuccess ? 'bg-green-500' : 'bg-red-500';
@@ -27,10 +22,6 @@ $(document).ready(function() {
         }, 4000);
     }
 
-    /**
-     * Shows a confirmation modal.
-     * @param {object} options - Configuration for the modal.
-     */
     function showConfirmation({ title, message, confirmText, onConfirm }) {
         confirmationModal.find('#confirmation-title').text(title);
         confirmationModal.find('#confirmation-message').text(message);
@@ -52,9 +43,6 @@ $(document).ready(function() {
     // 2. PRODUCT DETAILS PAGE SPECIFIC LOGIC
     // =================================================================
 
-    /**
-     * Handles thumbnail clicks to change the main product image.
-     */
     $('.thumbnail-image').on('click', function() {
         const newImageSrc = $(this).attr('src');
         $('#main-product-image').attr('src', newImageSrc);
@@ -65,9 +53,6 @@ $(document).ready(function() {
     $('.thumbnail-image').first().addClass('border-brand-gold').removeClass('border-transparent');
 
 
-    /**
-     * Helper function to display messages on the product details page.
-     */
     function showCartMessage(message, isSuccess) {
         const messageContainer = $('#add-to-cart-message-container');
         const successClasses = 'bg-green-100 border-green-400 text-green-700';
@@ -78,9 +63,6 @@ $(document).ready(function() {
         setTimeout(() => messageContainer.slideUp(), 4000);
     }
 
-    /**
-     * Checks if the current product is already in the cart and updates the button state.
-     */
     function checkCartStatusForProductPage() {
         if ($('#add-to-cart-form').length) {
             const urlParams = new URLSearchParams(window.location.search);
@@ -104,11 +86,15 @@ $(document).ready(function() {
         }
     }
 
-    /**
-     * Handles adding a product to the cart from the product details page.
-     */
     $('#add-to-cart-form').on('submit', function(e) {
         e.preventDefault();
+
+        const addToCartButton = $('#add-to-cart-form button[type="submit"]');
+        
+        // FIX: Prevent form submission if the button is already disabled.
+        if (addToCartButton.is(':disabled')) {
+            return;
+        }
 
         const urlParams = new URLSearchParams(window.location.search);
         const productId = urlParams.get('id');
@@ -118,11 +104,7 @@ $(document).ready(function() {
             return;
         }
 
-        const cartData = {
-            product_id: productId,
-        };
-
-        const addToCartButton = $('#add-to-cart-form button[type="submit"]');
+        const cartData = { product_id: productId };
         addToCartButton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Adding...');
 
         $.ajax({
@@ -137,29 +119,26 @@ $(document).ready(function() {
                     $('#cart-item-count').text(response.total_items);
                     addToCartButton.html('<i class="fas fa-check-circle mr-2"></i> In Cart');
                     addToCartButton.removeClass('bg-brand-dark hover:bg-gray-700').addClass('bg-gray-400 cursor-not-allowed');
-                } else {
-                    showCartMessage(response.message, false);
-                    if(response.message.toLowerCase().includes('already in your cart')) {
-                         addToCartButton.html('<i class="fas fa-check-circle mr-2"></i> In Cart');
-                         addToCartButton.removeClass('bg-brand-dark hover:bg-gray-700').addClass('bg-gray-400 cursor-not-allowed');
-                    } else {
-                        addToCartButton.prop('disabled', false).html('<i class="fas fa-shopping-cart mr-2"></i> Add to Cart');
-                    }
                 }
             },
             error: function(jqXHR) {
-                const response = jqXHR.responseJSON;
-                if (response && response.message) {
-                    showCartMessage(response.message, false);
-                    if (response.message.toLowerCase().includes('already in your cart')) {
-                        addToCartButton.html('<i class="fas fa-check-circle mr-2"></i> In Cart');
-                        addToCartButton.removeClass('bg-brand-dark hover:bg-gray-700').addClass('bg-gray-400 cursor-not-allowed');
-                    } else {
-                         addToCartButton.prop('disabled', false).html('<i class="fas fa-shopping-cart mr-2"></i> Add to Cart');
-                    }
+                if (jqXHR.status === 401) {
+                    const returnUrl = window.location.href;
+                    window.location.href = `login.php?redirect=${encodeURIComponent(returnUrl)}`;
                 } else {
-                    showCartMessage('An unexpected error occurred. Please try again.', false);
-                    addToCartButton.prop('disabled', false).html('<i class="fas fa-shopping-cart mr-2"></i> Add to Cart');
+                    const response = jqXHR.responseJSON;
+                    if (response && response.message) {
+                        showCartMessage(response.message, false);
+                        if (response.message.toLowerCase().includes('already in your cart')) {
+                            addToCartButton.html('<i class="fas fa-check-circle mr-2"></i> In Cart');
+                            addToCartButton.removeClass('bg-brand-dark hover:bg-gray-700').addClass('bg-gray-400 cursor-not-allowed');
+                        } else {
+                             addToCartButton.prop('disabled', false).html('<i class="fas fa-shopping-cart mr-2"></i> Add to Cart');
+                        }
+                    } else {
+                        showCartMessage('An unexpected error occurred. Please try again.', false);
+                        addToCartButton.prop('disabled', false).html('<i class="fas fa-shopping-cart mr-2"></i> Add to Cart');
+                    }
                 }
             }
         });

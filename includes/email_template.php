@@ -10,7 +10,7 @@
 function generate_email_html($site_name, $email_title, $email_content) {
     $current_year = date("Y");
     // Using an absolute URL for the logo is best for email client compatibility
-    $logo_url = 'https://axript.com.ng/assets/images/axript-logo.png'; 
+    $logo_url = 'https://axript.com.ng/assets/images/monogram.png'; 
 
     return "
     <!DOCTYPE html>

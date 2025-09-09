@@ -55,7 +55,10 @@ $(document).ready(function() {
         const form = modal.find('form');
         if (form.length) {
             form[0].reset();
+            // Reset file input text
             $('.file-input-filename').text('No file chosen');
+            // Hide all previews
+            $('img[id^="preview-"]').addClass('hidden').attr('src', '');
         }
         modal.find('input[name="id"]').val('');
         $('#image-previews').empty().addClass('hidden');
@@ -63,14 +66,27 @@ $(document).ready(function() {
     }
 
     $('.close-modal-btn').on('click', function() {
-        hideModal($(this).closest('.modal'));
+        hideModal($(this).closest('.fixed.inset-0'));
     });
     
+    // Updated to handle live image previews
     $(document).on('change', 'input[type="file"]', function() {
         const targetSelector = $(this).data('filename-target');
+        const previewSelector = $(this).data('preview-target');
+        const file = this.files[0];
+
         if (targetSelector) {
-            const filename = this.files.length > 0 ? this.files[0].name : 'No file chosen';
-            $(targetSelector).text(filename);
+            $(targetSelector).text(file ? file.name : 'No file chosen');
+        }
+
+        if (previewSelector && file && file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                $(previewSelector).attr('src', e.target.result).removeClass('hidden');
+            };
+            reader.readAsDataURL(file);
+        } else if(previewSelector) {
+            $(previewSelector).addClass('hidden').attr('src', '');
         }
     });
 
@@ -88,14 +104,18 @@ $(document).ready(function() {
             const step = $(this).data('step');
             const circle = $(this).find('.step-circle');
             const text = $(this).find('.step-text');
+            
+            circle.text(step);
+            if(circle.find('i').length) circle.find('i').remove();
+
             if (step < currentStep) {
-                circle.addClass('completed').removeClass('active');
+                circle.addClass('completed').removeClass('active').html('<i class="fas fa-check"></i>');
                 text.removeClass('active');
             } else if (step == currentStep) {
-                circle.addClass('active').removeClass('completed');
+                circle.addClass('active').removeClass('completed').text(step);
                 text.addClass('active');
             } else {
-                circle.removeClass('active completed');
+                circle.removeClass('active completed').text(step);
                 text.removeClass('active');
             }
         });
@@ -113,12 +133,35 @@ $(document).ready(function() {
     
     function validateStep(step) {
         let isValid = true;
+        const isEditing = $('#product_id').val() !== '';
+        
         $(`.form-step[data-step="${step}"] [required]`).each(function() {
-            if (!$(this).val()) {
-                isValid = false;
-                $(this).addClass('border-red-500');
+            const input = $(this);
+            let hasValue = true;
+
+            if (input.is('[type=file]')) {
+                if (!isEditing && input[0].files.length === 0) {
+                    hasValue = false;
+                }
             } else {
-                $(this).removeClass('border-red-500');
+                if (!input.val()) {
+                    hasValue = false;
+                }
+            }
+
+            if (!hasValue) {
+                isValid = false;
+                if (input.is('[type=file]')) {
+                    input.closest('.file-input-wrapper').find('.file-input-button').addClass('border-red-500');
+                } else {
+                    input.addClass('border-red-500');
+                }
+            } else {
+                if (input.is('[type=file]')) {
+                    input.closest('.file-input-wrapper').find('.file-input-button').removeClass('border-red-500');
+                } else {
+                    input.removeClass('border-red-500');
+                }
             }
         });
         if (!isValid) {

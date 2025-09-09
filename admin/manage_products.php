@@ -100,13 +100,19 @@ include 'includes/header.php';
                         </select>
                     </div>
                 </div>
-                <div class="mt-4">
-                    <label for="product_price" class="block text-sm font-medium text-gray-700">Price (₦)</label>
-                    <input type="number" id="product_price" name="price" step="0.01" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold">
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <label for="product_price" class="block text-sm font-medium text-gray-700">Price (₦)</label>
+                        <input type="number" id="product_price" name="price" step="0.01" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold">
+                    </div>
+                     <div>
+                        <label for="product_sku" class="block text-sm font-medium text-gray-700">SKU</label>
+                        <input type="text" id="product_sku" name="sku" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold" placeholder="Auto-generated if left blank">
+                    </div>
                 </div>
                 <div class="mt-4">
                     <label for="product_description" class="block text-sm font-medium text-gray-700">Description</label>
-                    <textarea id="product_description" name="description" rows="6" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold"></textarea>
+                    <textarea id="product_description" name="description" rows="4" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-brand-gold focus:border-brand-gold"></textarea>
                 </div>
             </div>
 
@@ -118,25 +124,29 @@ include 'includes/header.php';
                     <!-- Image previews will be loaded here -->
                 </div>
                 <div class="space-y-4">
-                    <!-- Main Image -->
                     <div class="bg-gray-50 p-4 rounded-lg">
-                        <label class="block text-sm font-medium text-gray-700">Main Image (Required)</label>
-                        <div class="mt-1 file-input-wrapper">
-                             <span class="file-input-button"><i class="fas fa-upload mr-2"></i>Choose File</span>
-                             <input type="file" name="image_url_1" data-filename-target="#filename-1">
-                             <span id="filename-1" class="file-input-filename">No file chosen</span>
+                        <label class="block text-sm font-medium text-gray-700">Main Image</label>
+                        <div class="mt-1 flex items-center">
+                            <div class="file-input-wrapper">
+                                 <span class="file-input-button"><i class="fas fa-upload mr-2"></i>Choose File</span>
+                                 <input type="file" name="image_url_1" data-filename-target="#filename-1" data-preview-target="#preview-1" accept="image/*">
+                            </div>
+                            <img id="preview-1" class="w-16 h-16 object-cover rounded-md ml-4 hidden">
                         </div>
+                        <span id="filename-1" class="file-input-filename">No file chosen</span>
                     </div>
-                    <!-- Additional Images -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <?php for ($i = 2; $i <= 5; $i++): ?>
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <label class="block text-sm font-medium text-gray-700">Image <?= $i ?></label>
-                            <div class="mt-1 file-input-wrapper">
-                                 <span class="file-input-button"><i class="fas fa-upload mr-2"></i>Choose File</span>
-                                 <input type="file" name="image_url_<?= $i ?>" data-filename-target="#filename-<?= $i ?>">
-                                 <span id="filename-<?= $i ?>" class="file-input-filename">No file chosen</span>
+                             <div class="mt-1 flex items-center">
+                                <div class="file-input-wrapper">
+                                     <span class="file-input-button"><i class="fas fa-upload mr-2"></i>Choose File</span>
+                                     <input type="file" name="image_url_<?= $i ?>" data-filename-target="#filename-<?= $i ?>" data-preview-target="#preview-<?= $i ?>" accept="image/*">
+                                </div>
+                                <img id="preview-<?= $i ?>" class="w-16 h-16 object-cover rounded-md ml-4 hidden">
                             </div>
+                            <span id="filename-<?= $i ?>" class="file-input-filename">No file chosen</span>
                         </div>
                         <?php endfor; ?>
                     </div>
@@ -146,12 +156,12 @@ include 'includes/header.php';
             <!-- Step 3: Digital File -->
             <div class="form-step hidden" data-step="3">
                 <h4 class="text-md font-semibold text-gray-800 mb-2">Downloadable File</h4>
-                <p class="text-sm text-gray-500 mb-4">Upload the final product file that customers will receive after purchase (e.g., ZIP, PNG).</p>
+                <p class="text-sm text-gray-500 mb-4">Upload the final product file that customers will receive after purchase.</p>
                  <div class="bg-gray-50 p-6 rounded-lg">
                     <label class="block text-sm font-medium text-gray-700">Product File</label>
                      <div class="mt-1 file-input-wrapper">
                          <span class="file-input-button"><i class="fas fa-file-archive mr-2"></i>Choose Digital File</span>
-                         <input type="file" name="digital_file" data-filename-target="#filename-digital">
+                         <input type="file" name="digital_file" data-filename-target="#filename-digital" accept=".zip">
                          <span id="filename-digital" class="file-input-filename">No file chosen</span>
                     </div>
                      <p class="text-xs text-gray-500 mt-2">Required for new products. Leave blank when editing to keep the existing file.</p>

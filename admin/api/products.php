@@ -3,28 +3,19 @@ include_once '../../includes/db_connect.php';
 include_once '../../includes/functions.php';
 
 if (!is_admin()) {
-    //send_json_response(['success' => false, 'message' => 'Unauthorized'], 403);
+    send_json_response(['success' => false, 'message' => 'Unauthorized'], 403);
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
 
-// --- Handle GET requests (Fetch Products) ---
+// --- Handle GET requests ---
 if ($method === 'GET') {
-    if (isset($_GET['list']) && $_GET['list'] === 'all') {
-        // Fetch a simple list of all products for dropdowns
-        $query = "SELECT id, name, sku FROM products ORDER BY name ASC";
-        $result = $conn->query($query);
-        $products = $result->fetch_all(MYSQLI_ASSOC);
-        send_json_response(['success' => true, 'products' => $products]);
-
-    } elseif (isset($_GET['id']) && is_numeric($_GET['id'])) {
-        // Fetch a single product
+    if (isset($_GET['id']) && is_numeric($_GET['id'])) {
         $product_id = (int)$_GET['id'];
         $stmt = $conn->prepare("SELECT * FROM products WHERE id = ?");
         $stmt->bind_param("i", $product_id);
         $stmt->execute();
-        $result = $stmt->get_result();
-        $product = $result->fetch_assoc();
+        $product = $stmt->get_result()->fetch_assoc();
         $stmt->close();
         if ($product) {
             send_json_response(['success' => true, 'product' => $product]);
@@ -61,7 +52,7 @@ if ($method === 'GET') {
 if ($method === 'POST') {
     $product_id = isset($_POST['id']) && !empty($_POST['id']) ? (int)$_POST['id'] : null;
     $name = sanitize_input($_POST['name'] ?? '');
-    $sku = sanitize_input($_POST['sku'] ?? ''); 
+    $sku = sanitize_input($_POST['sku'] ?? '');
     $category_id = (int)($_POST['category_id'] ?? 0);
     $price = (float)($_POST['price'] ?? 0);
     $description = sanitize_input($_POST['description'] ?? '');
@@ -81,14 +72,17 @@ if ($method === 'POST') {
         $stmt->close();
     }
     
-    function handle_upload($file_key, $upload_dir, &$error_message) {
+    // --- Secure File Upload Helper ---
+    function handle_upload($file_key, $upload_dir, $allowed_mime_types, &$error_message) {
         if (isset($_FILES[$file_key]) && $_FILES[$file_key]['error'] === UPLOAD_ERR_OK) {
-            if (!is_dir($upload_dir)) {
-                if (!mkdir($upload_dir, 0777, true)) {
-                    $error_message = "Failed to create upload directory.";
-                    return null;
-                }
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mime_type = $finfo->file($_FILES[$file_key]['tmp_name']);
+            if (!in_array($mime_type, $allowed_mime_types)) {
+                $error_message = "Invalid file type for '{$file_key}'.";
+                return null;
             }
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+            
             $filename = uniqid() . '-' . basename($_FILES[$file_key]['name']);
             $target_file = $upload_dir . $filename;
             if (move_uploaded_file($_FILES[$file_key]['tmp_name'], $target_file)) {
@@ -97,9 +91,6 @@ if ($method === 'POST') {
                 $error_message = "Failed to move uploaded file '{$file_key}'.";
                 return null;
             }
-        } elseif (isset($_FILES[$file_key]) && $_FILES[$file_key]['error'] !== UPLOAD_ERR_NO_FILE) {
-            $error_message = "Upload error for '{$file_key}': " . $_FILES[$file_key]['error'];
-            return null;
         }
         return 'no_file';
     }
@@ -107,21 +98,20 @@ if ($method === 'POST') {
     $upload_error = '';
     $uploads_dir = '../../uploads/products/';
     $downloads_dir = '../../uploads/downloads/';
+    $allowed_image_mimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    $allowed_digital_mimes = ['application/zip'];
 
     $image_paths = [];
     for ($i = 1; $i <= 5; $i++) {
         $key = 'image_url_' . $i;
-        $result = handle_upload($key, $uploads_dir, $upload_error);
-        if ($upload_error) {
-            send_json_response(['success' => false, 'message' => $upload_error], 500);
-        }
-        $image_paths[$i-1] = ($result !== 'no_file') ? $result : ($current_paths[$key] ?? null);
+        $db_key = ($i === 1) ? 'image_url' : 'image_url_' . $i;
+        $result = handle_upload($key, $uploads_dir, $allowed_image_mimes, $upload_error);
+        if ($upload_error) send_json_response(['success' => false, 'message' => $upload_error], 500);
+        $image_paths[$i-1] = ($result !== 'no_file') ? $result : ($current_paths[$db_key] ?? null);
     }
 
-    $digital_file_result = handle_upload('digital_file', $downloads_dir, $upload_error);
-    if ($upload_error) {
-        send_json_response(['success' => false, 'message' => $upload_error], 500);
-    }
+    $digital_file_result = handle_upload('digital_file', $downloads_dir, $allowed_digital_mimes, $upload_error);
+    if ($upload_error) send_json_response(['success' => false, 'message' => $upload_error], 500);
     $digital_file_path = ($digital_file_result !== 'no_file') ? $digital_file_result : ($current_paths['digital_file_url'] ?? null);
 
     if (!$is_update && !$image_paths[0]) {
@@ -137,10 +127,9 @@ if ($method === 'POST') {
         if ($stmt->execute()) {
             log_activity($conn, 'UPDATE_PRODUCT', "Updated product ID: $product_id");
             send_json_response(['success' => true, 'message' => 'Product updated successfully.']);
-        } else {
-            send_json_response(['success' => false, 'message' => 'Database error during update.'], 500);
         }
     } else {
+        // Create Logic
         if (empty($sku)) {
             $cat_stmt = $conn->prepare("SELECT name FROM categories WHERE id = ?");
             $cat_stmt->bind_param("i", $category_id);
@@ -154,7 +143,6 @@ if ($method === 'POST') {
             }
             $cat_stmt->close();
         }
-
         $stmt = $conn->prepare("INSERT INTO products (name, sku, description, price, category_id, image_url, image_url_2, image_url_3, image_url_4, image_url_5, digital_file_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("sssdissssss", $name, $sku, $description, $price, $category_id, $image_paths[0], $image_paths[1], $image_paths[2], $image_paths[3], $image_paths[4], $digital_file_path);
         if ($stmt->execute()) {
@@ -198,6 +186,4 @@ if ($method === 'DELETE') {
     }
     $stmt->close();
 }
-
-$conn->close();
 

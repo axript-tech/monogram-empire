@@ -87,6 +87,7 @@ $(document).ready(function() {
     /**
      * Handles the submission of the login form.
      */
+   
     $('#login-form').on('submit', function(e) {
         e.preventDefault();
         $('#auth-message-container').slideUp().empty();
@@ -101,7 +102,9 @@ $(document).ready(function() {
 
         const formData = {
             email: $('#email').val(),
-            password: $('#password').val()
+            password: $('#password').val(),
+            // Include the redirect URL in the data sent to the API
+            redirect_url: $('input[name="redirect_url"]').val()
         };
 
         $.ajax({
@@ -113,7 +116,9 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     showAuthMessage(response.message, true);
-                    setTimeout(() => window.location.href = 'order-history.php', 1500);
+                    // Use the redirect URL from the API, or default to order history
+                    const redirectTarget = response.redirect_url || 'order-history.php';
+                    setTimeout(() => window.location.href = redirectTarget, 1500);
                 } else {
                     showAuthMessage(response.message, false);
                     $('#password').val('');
@@ -135,6 +140,7 @@ $(document).ready(function() {
             }
         });
     });
+
 
     /**
      * Handles the submission of the forgot password form.

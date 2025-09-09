@@ -1,12 +1,16 @@
 <?php 
 // This MUST be the very first line of the file.
 include_once 'includes/functions.php';
-include 'includes/header.php'; 
 
-// Redirect logged-in users to their history page
+// Redirect logged-in users away from the login page
 if (is_logged_in()) {
     redirect('order-history.php');
 }
+
+// Capture the return URL if it exists
+$redirect_url = isset($_GET['redirect']) ? sanitize_input($_GET['redirect']) : '';
+
+include 'includes/header.php'; 
 ?>
 
 <div class="bg-gray-50 py-16">
@@ -15,10 +19,12 @@ if (is_logged_in()) {
             <h2 class="text-3xl font-bold text-center text-brand-dark mb-2">Welcome Back!</h2>
             <p class="text-center text-gray-500 mb-8">Log in to access your account and order history.</p>
 
-            <!-- Container for AJAX messages -->
             <div id="auth-message-container" class="mb-4" style="display: none;"></div>
 
             <form id="login-form">
+                <!-- Hidden field to store the redirect URL -->
+                <input type="hidden" name="redirect_url" value="<?= htmlspecialchars($redirect_url) ?>">
+
                 <div class="mb-4">
                     <label for="email" class="block text-gray-700 font-bold mb-2">Email Address</label>
                     <input type="email" id="email" name="email" required class="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-gold">

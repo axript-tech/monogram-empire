@@ -1,4 +1,4 @@
-<aside class="w-64 bg-brand-dark text-gray-300 flex-shrink-0">
+<aside class="admin-sidebar bg-brand-dark text-gray-300 flex flex-col">
     <div class="p-4 border-b border-gray-700">
         <a href="dashboard.php" class="text-2xl font-bold text-white"><span class="text-brand-gold">Monogram</span>Admin</a>
     </div>

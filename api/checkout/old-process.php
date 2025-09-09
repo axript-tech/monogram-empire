@@ -97,7 +97,7 @@ try {
         'email' => $email,
         'total' => $order_total * 100, // Paystack expects amount in kobo
         'reference' => $payment_reference
-    ], 201);
+    ]c);
 
 } catch (mysqli_sql_exception $exception) {
     $conn->rollback();
